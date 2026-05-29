@@ -1,0 +1,54 @@
+# Binaries and executables
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+*.prof
+
+# Go
+vendor/
+go-build/
+
+# Node / React / Expo
+node_modules/
+.expo/
+.expo-shared/
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+*.orig.*
+web-build/
+dist/
+.next/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+.env.*.local
+*.pem
+
+# Database dumps
+*.dump
+*.sql
+
+# Build artifacts
+build/
+tmp/
+*.log
+
+# Docker volumes
+docker-volumes/

@@ -1,0 +1,5 @@
+docker-compose.yml
+.env
+*.log
+docker-volumes/
+backend/web.mobile/
