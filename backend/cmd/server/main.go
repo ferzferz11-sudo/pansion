@@ -71,7 +71,7 @@ func main() {
 	r := server.New(cfg, jwtSvc, wsHub, logger, authH, maidH, sosH, roomH, pool)
 
 	sR := setRepo.NewRepository(pool)
-	mountAdminRoutes(r, jwtSvc, userRepo, sR)
+	mountAdminRoutes(r, jwtSvc, userRepo, sR, pool)
 
 	// Dashboard stats (inline JWT auth).
 	r.Get("/api/v1/dashboard", func(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +130,7 @@ func main() {
 }
 
 func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
-	userRepo *repoUser.Repository, sR *setRepo.Repository) {
+	userRepo *repoUser.Repository, sR *setRepo.Repository, pool *pgxpool.Pool) {
 
 	r.Group(func(rr chi.Router) {
 		rr.Use(jwtAuthMW(jwtSvc))
@@ -191,13 +191,20 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 				Status    string `json:"status"`
 			}
 			json.NewDecoder(r.Body).Decode(&b)
-			err := userRepo.Update(r.Context(), &domain.User{
-				ID: b.ID, Email: b.Email, Phone: b.Phone,
-				FirstName: b.FirstName, LastName: b.LastName, Role: b.Role, Status: b.Status,
-			})
+			tag, err := pool.Exec(r.Context(), `
+				UPDATE users SET
+					first_name=$2, last_name=$3, role=$4, status=$5, updated_at=NOW()
+					, email = CASE WHEN ($6 = '' OR email = $6) THEN email ELSE $6 END
+					, phone = CASE WHEN ($7 = '' OR phone = $7) THEN phone ELSE $7 END
+				WHERE id=$1
+				AND NOT EXISTS (
+					SELECT 1 FROM users WHERE id!=$1 AND (email=$6 OR phone=$7) AND email IS NOT NULL AND phone IS NOT NULL
+				)
+			`, b.ID, b.FirstName, b.LastName, b.Role, b.Status, b.Email, b.Phone)
 			if err != nil { writeJSON(w, 400, errResp("Ошибка обновления: "+err.Error())); return }
+			if tag.RowsAffected() == 0 { writeJSON(w, 400, errResp("Пользователь не найден или email/phone занят")); return }
 			writeJSON(w, 200, okResp("ok"))
-		})
+			})
 
 		rr.Delete("/api/v1/users", func(w http.ResponseWriter, r *http.Request) {
 			id := r.URL.Query().Get("id")
