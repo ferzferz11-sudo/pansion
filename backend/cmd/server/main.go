@@ -190,17 +190,32 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 				Role      string `json:"role"`
 				Status    string `json:"status"`
 			}
-			json.NewDecoder(r.Body).Decode(&b)
-			tag, err := pool.Exec(r.Context(), `
-				UPDATE users SET
-					first_name=$2, last_name=$3, role=$4, status=$5, updated_at=NOW()
-					, email = CASE WHEN ($6 = '' OR email = $6) THEN email ELSE $6 END
-					, phone = CASE WHEN ($7 = '' OR phone = $7) THEN phone ELSE $7 END
-				WHERE id=$1
-				AND NOT EXISTS (
-					SELECT 1 FROM users WHERE id!=$1 AND (email=$6 OR phone=$7) AND email IS NOT NULL AND phone IS NOT NULL
-				)
-			`, b.ID, b.FirstName, b.LastName, b.Role, b.Status, b.Email, b.Phone)
+			var req struct {
+				ID, Email, Phone, FirstName, LastName, Role, Status string
+				Password string `json:"password"`
+			}
+			json.NewDecoder(r.Body).Decode(&req)
+			b.ID = req.ID; b.Email = req.Email; b.Phone = req.Phone
+			b.FirstName = req.FirstName; b.LastName = req.LastName
+			b.Role = req.Role; b.Status = req.Status
+			var pwHash string
+			if req.Password != "" {
+				h, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+				pwHash = string(h)
+			}
+		sql := `
+			UPDATE users SET
+				first_name=$2, last_name=$3, role=$4, status=$5, updated_at=NOW()
+				, email = CASE WHEN ($6 = '' OR email = $6) THEN email ELSE $6 END
+				, phone = CASE WHEN ($7 = '' OR phone = $7) THEN phone ELSE $7 END
+		`
+		args := []interface{}{b.ID, b.FirstName, b.LastName, b.Role, b.Status, b.Email, b.Phone}
+		if pwHash != "" {
+			sql += " , password_hash=$8"
+			args = append(args, pwHash)
+		}
+		sql += " WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM users WHERE id!=$1 AND (email=$6 OR phone=$7) AND email IS NOT NULL AND phone IS NOT NULL)"
+		tag, err := pool.Exec(r.Context(), sql, args...)
 			if err != nil { writeJSON(w, 400, errResp("Ошибка обновления: "+err.Error())); return }
 			if tag.RowsAffected() == 0 { writeJSON(w, 400, errResp("Пользователь не найден или email/phone занят")); return }
 			writeJSON(w, 200, okResp("ok"))
