@@ -20,12 +20,33 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 }
 
 // GetTasksByMaid returns tasks filtered by maid_id and status.
+// If maidID is empty, returns all tasks (for admin/owner).
 // statusFilter "all" returns all statuses.
 func (r *Repository) GetTasksByMaid(ctx context.Context, maidID, statusFilter string) ([]domain.MaidTask, error) {
 	var rows pgx.Rows
 	var err error
 
-	if statusFilter == "all" {
+	// Empty maidID = return all tasks (admin/owner view).
+	allTasks := maidID == ""
+
+	if allTasks && statusFilter == "all" {
+		rows, err = r.db.Query(ctx, `
+			SELECT t.id, t.room_id, r.number, t.maid_id, t.task_type, t.status,
+			       t.created_at, t.completed_at
+			FROM maid_tasks t
+			JOIN rooms r ON r.id = t.room_id
+			ORDER BY t.created_at DESC
+		`)
+	} else if allTasks {
+		rows, err = r.db.Query(ctx, `
+			SELECT t.id, t.room_id, r.number, t.maid_id, t.task_type, t.status,
+			       t.created_at, t.completed_at
+			FROM maid_tasks t
+			JOIN rooms r ON r.id = t.room_id
+			WHERE t.status = $1
+			ORDER BY t.created_at DESC
+		`, statusFilter)
+	} else if statusFilter == "all" {
 		rows, err = r.db.Query(ctx, `
 			SELECT t.id, t.room_id, r.number, t.maid_id, t.task_type, t.status,
 			       t.created_at, t.completed_at

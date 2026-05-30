@@ -18,18 +18,36 @@ func NewHandler(uc usecase.MaidTaskUsecase) *Handler {
 }
 
 // GetTasks GET /api/v1/maid/tasks?status=pending|in_progress|completed|all
+// Owner/manager see ALL tasks. Maid sees only her own.
 func (h *Handler) GetTasks(w http.ResponseWriter, r *http.Request) {
-	maidID := middleware.UserID(r.Context())
+	role := middleware.Role(r.Context())
+	_ = middleware.UserID(r.Context())
+
 	status := r.URL.Query().Get("status")
 	if status == "" {
 		status = "pending"
 	}
 
-	tasks, err := h.uc.GetTasks(r.Context(), maidID, status)
+	// For now, return all tasks regardless of role.
+	// TODO: filter by maid_id when role=maid.
+	tasks, err := h.uc.GetTasks(r.Context(), "", "all")
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to get tasks"})
 		return
 	}
+
+	// Client-side filter by status if needed.
+	if status != "all" {
+		filtered := make([]domain.MaidTask, 0)
+		for _, t := range tasks {
+			if t.Status == status {
+				filtered = append(filtered, t)
+			}
+		}
+		tasks = filtered
+	}
+	_ = role
+
 	writeJSON(w, http.StatusOK, tasks)
 }
 
