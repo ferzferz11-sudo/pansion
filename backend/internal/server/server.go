@@ -86,9 +86,9 @@ func New(cfg *config.Config, jwtSvc *service.JWTService, wsHub *pkgws.Hub, logge
 			}
 			return result, nil
 		}).GetTransactions)
-
 		r.Get("/api/v1/finance/summary", finance.NewHandler(nil).GetSummary)
 
+		// WebSocket
 		wsHandler := hws.NewHandler(wsHub, logger)
 		r.Get("/api/v1/ws", wsHandler.Serve)
 	})
