@@ -73,6 +73,55 @@ func main() {
 	sR := setRepo.NewRepository(pool)
 	mountAdminRoutes(r, jwtSvc, userRepo, sR)
 
+	// Dashboard stats (inline JWT auth).
+	r.Get("/api/v1/dashboard", func(w http.ResponseWriter, r *http.Request) {
+		auth_h := r.Header.Get("Authorization")
+		if len(auth_h) < 8 { writeJSON(w, 401, errResp("Unauthorized")); return }
+		claims, err := jwtSvc.Validate(auth_h[7:])
+		if err != nil { writeJSON(w, 401, errResp("Invalid token")); return }
+		pid := claims.PensionID
+
+		type stat struct {
+			Table string
+			Count int
+		}
+		stats := []stat{}
+		for _, table := range []string{"rooms","guests","users","maid_tasks","transactions"} {
+			var n int
+			_ = pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM "+table+" WHERE pension_id=$1", pid).Scan(&n)
+			stats = append(stats, stat{Table: table, Count: n})
+		}
+		// Rooms by status.
+		type rs struct {
+			Status string
+			Count  int
+		}
+		roomStats := []rs{}
+		if rows, err := pool.Query(r.Context(), "SELECT status, COUNT(*) FROM rooms WHERE pension_id=$1 GROUP BY status", pid); err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var s rs
+				rows.Scan(&s.Status, &s.Count)
+				roomStats = append(roomStats, s)
+			}
+		}
+		// Finance summary.
+		var income, expense float64
+		_ = pool.QueryRow(r.Context(),
+			"SELECT COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END),0), COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0) FROM transactions WHERE pension_id=$1", pid,
+		).Scan(&income, &expense)
+		// Active SOS.
+		var sosCount int
+		_ = pool.QueryRow(r.Context(), "SELECT COUNT(*) FROM sos_signals WHERE pension_id=$1 AND status='active'", pid).Scan(&sosCount)
+
+		writeJSON(w, 200, map[string]interface{}{
+			"stats":      stats,
+			"room_stats": roomStats,
+			"finance":    map[string]float64{"income": income, "expense": expense, "balance": income - expense},
+			"sos_active": sosCount,
+		})
+	})
+
 	seedAdmin(ctx, pool, logger, sR)
 
 	srv := &http.Server{Addr: cfg.ServerPort, Handler: r,
