@@ -195,7 +195,7 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 				ID: b.ID, Email: b.Email, Phone: b.Phone,
 				FirstName: b.FirstName, LastName: b.LastName, Role: b.Role, Status: b.Status,
 			})
-			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
+			if err != nil { writeJSON(w, 400, errResp("Ошибка обновления: "+err.Error())); return }
 			writeJSON(w, 200, okResp("ok"))
 		})
 

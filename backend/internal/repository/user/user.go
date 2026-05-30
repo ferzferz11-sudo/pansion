@@ -101,9 +101,14 @@ func (r *Repository) Create(ctx context.Context, u *domain.User) error {
 }
 
 func (r *Repository) Update(ctx context.Context, u *domain.User) error {
-	tag, err := r.db.Exec(ctx, `UPDATE users SET email=$2,phone=$3,first_name=$4,last_name=$5,role=$6,status=$7,updated_at=NOW() WHERE id=$1`, u.ID,u.Email,u.Phone,u.FirstName,u.LastName,u.Role,u.Status)
+	tag, err := r.db.Exec(ctx, `
+		UPDATE users SET email=$2,phone=$3,first_name=$4,last_name=$5,role=$6,status=$7,updated_at=NOW()
+		WHERE id=$1 AND NOT EXISTS (
+			SELECT 1 FROM users WHERE id!=$1 AND (email=$2 OR phone=$3) AND email IS NOT NULL AND phone IS NOT NULL
+		)
+	`, u.ID, u.Email, u.Phone, u.FirstName, u.LastName, u.Role, u.Status)
 	if err != nil { return fmt.Errorf("update: %w", err) }
-	if tag.RowsAffected() == 0 { return fmt.Errorf("not found") }
+	if tag.RowsAffected() == 0 { return fmt.Errorf("не найден или email/phone занят другим пользователем") }
 	return nil
 }
 
