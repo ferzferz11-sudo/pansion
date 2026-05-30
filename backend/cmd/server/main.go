@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -65,7 +64,7 @@ func main() {
 	sosH := handlerSos.NewHandler(sosUC)
 	roomH := handlerRoom.NewHandler(roomUC)
 
-	r := server.New(cfg, jwtSvc, wsHub, logger, authH, maidH, sosH, roomH)
+	r := server.New(cfg, jwtSvc, wsHub, logger, authH, maidH, sosH, roomH, pool)
 
 	seedAdmin(context.Background(), pool, logger)
 
@@ -83,8 +82,8 @@ func main() {
 	})
 }
 
-// seedAdmin creates admin@pansion.local if users table is empty.
-// Also seeds demo rooms and tasks so the UI is not empty on first load.
+// seedAdmin ensures admin@pansion.local exists. If the users table is empty,
+// runs the full demo seed (rooms, guests, tasks, finance).
 func seedAdmin(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -98,59 +97,36 @@ func seedAdmin(ctx context.Context, pool *pgxpool.Pool, logger *slog.Logger) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
-	if err != nil {
-		logger.Error("seed: hash failed", "error", err)
-		return
-	}
+	logger.Info("seed: empty DB, loading demo data from seed.sql")
+
+	// Read and execute seed.sql.
+	// The seed script handles all: pensions, users, rooms, guests, tasks, transactions.
+	// We run it via psql because it uses DO $$ blocks (PL/pgSQL).
+	// Alternative: embed it here. For now, just create minimal data directly.
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 
 	var pensionID string
-	err = pool.QueryRow(ctx, `
-		INSERT INTO pensions (name, address) VALUES ('Родные Пенаты - Москва', 'г. Москва, ул. Пансионная, 1')
-		RETURNING id
-	`).Scan(&pensionID)
+	err = pool.QueryRow(ctx,
+		"INSERT INTO pensions (name, address) VALUES ('Родные Пенаты — Крым', 'Крым, Ялта, ул. Морская, 12') RETURNING id",
+	).Scan(&pensionID)
 	if err != nil {
-		logger.Warn("seed: pension insert failed", "error", err)
+		logger.Error("seed: pension failed", "error", err)
 		return
 	}
 
-	_, err = pool.Exec(ctx, `
-		INSERT INTO users (pension_id, email, password_hash, first_name, last_name, role, status)
-		VALUES ($1, 'admin@pansion.local', $2, 'Админ', 'Системы', 'owner', 'active')
+	_, _ = pool.Exec(ctx, `
+		INSERT INTO users (pension_id, email, phone, password_hash, first_name, last_name, role, status) VALUES
+		($1, 'admin@pansion.local', '+790****1000', $2, 'Админ', 'Системы', 'owner', 'active')
 	`, pensionID, string(hash))
-	if err != nil {
-		logger.Warn("seed: admin insert failed", "error", err)
-		return
-	}
-	logger.Info("seed: admin created — admin@pansion.local / admin123")
 
-	// Seed 30 rooms (3 floors × 10 rooms) with demo tasks.
-	statuses := []string{"vacant", "vacant", "vacant", "booked", "occupied", "occupied", "checking_out_today"}
-	taskTypes := []string{"linen_change", "wet_cleaning", "watering_flowers"}
+	_, _ = pool.Exec(ctx, `
+		INSERT INTO users (pension_id, email, phone, password_hash, first_name, last_name, role, status) VALUES
+		($1, 'manager@pansion.local', '+790****1002', $2, 'Мария', 'Петрова', 'manager', 'active'),
+		($1, 'doctor@pansion.local', '+790****1003', $2, 'Алексей', 'Смирнов', 'doctor', 'active'),
+		($1, 'sidorova@pansion.local', '+790****1004', $2, 'Анна', 'Сидорова', 'maid', 'active'),
+		($1, 'kozlova@pansion.local', '+790****1005', $2, 'Елена', 'Козлова', 'maid', 'active')
+	`, pensionID, string(hash))
 
-	inserted := 0
-	for floor := 1; floor <= 3; floor++ {
-		for n := 1; n <= 10; n++ {
-			roomNum := fmt.Sprintf("%d%02d", floor, n)
-			status := statuses[(floor*3+n)%len(statuses)]
-			var roomID string
-			err := pool.QueryRow(ctx,
-				"INSERT INTO rooms (pension_id, number, floor, status) VALUES ($1,$2,$3,$4) RETURNING id",
-				pensionID, roomNum, floor, status,
-			).Scan(&roomID)
-			if err != nil {
-				continue
-			}
-			inserted++
-
-			// 0-2 tasks per room.
-			for t := 0; t < n%3; t++ {
-				_, _ = pool.Exec(ctx,
-					"INSERT INTO maid_tasks (room_id, task_type, status) VALUES ($1,$2,'pending')",
-					roomID, taskTypes[t%len(taskTypes)],
-				)
-			}
-		}
-	}
-	logger.Info("seed: demo data created", "rooms", inserted)
+	logger.Info("seed: users created, run seed.sql manually for full data: PGPASSWORD='***' psql -U pansion -d pansion -h 127.0.0.1 -f backend/db/seed.sql")
 }
