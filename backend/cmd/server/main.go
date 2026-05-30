@@ -206,15 +206,15 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 		sql := `
 			UPDATE users SET
 				first_name=$2, last_name=$3, role=$4, status=$5, updated_at=NOW()
-				, email = CASE WHEN ($6 = '' OR email = $6) THEN email ELSE $6 END
-				, phone = CASE WHEN ($7 = '' OR phone = $7) THEN phone ELSE $7 END
+				, email = CASE WHEN $6='' OR email=$6 THEN email ELSE $6 END
+				, phone = CASE WHEN $7='' OR phone=$7 THEN phone ELSE $7 END
 		`
 		args := []interface{}{b.ID, b.FirstName, b.LastName, b.Role, b.Status, b.Email, b.Phone}
 		if pwHash != "" {
 			sql += " , password_hash=$8"
 			args = append(args, pwHash)
 		}
-		sql += " WHERE id=$1 AND NOT EXISTS (SELECT 1 FROM users WHERE id!=$1 AND (email=$6 OR phone=$7) AND email IS NOT NULL AND phone IS NOT NULL)"
+		sql += " WHERE id=$1"
 		tag, err := pool.Exec(r.Context(), sql, args...)
 			if err != nil { writeJSON(w, 400, errResp("Ошибка обновления: "+err.Error())); return }
 			if tag.RowsAffected() == 0 { writeJSON(w, 400, errResp("Пользователь не найден или email/phone занят")); return }
@@ -245,7 +245,32 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
 			writeJSON(w, 200, okResp("ok"))
 		})
-	})
+
+		// Roles management.
+		rr.Get("/api/v1/settings/roles", func(w http.ResponseWriter, r *http.Request) {
+			pid := ctxStr(r, "pid")
+			roles, err := sR.GetAllRoles(r.Context(), pid)
+			if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
+			writeJSON(w, 200, roles)
+		})
+		rr.Post("/api/v1/settings/roles", func(w http.ResponseWriter, r *http.Request) {
+			pid := ctxStr(r, "pid")
+			var b struct{ Name string `json:"name"` }
+			json.NewDecoder(r.Body).Decode(&b)
+			if b.Name == "" { writeJSON(w, 400, errResp("Укажите название роли")); return }
+			err := sR.CreateRole(r.Context(), pid, b.Name)
+			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
+			writeJSON(w, 201, okResp("created"))
+		})
+		rr.Delete("/api/v1/settings/roles", func(w http.ResponseWriter, r *http.Request) {
+			pid := ctxStr(r, "pid")
+			roleName := r.URL.Query().Get("name")
+			if roleName == "" { writeJSON(w, 400, errResp("Укажите роль")); return }
+			deleted, err := sR.DeleteRole(r.Context(), pid, roleName)
+			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
+			writeJSON(w, 200, map[string]interface{}{"status": "deleted", "users_removed": deleted})
+		})
+		})
 }
 
 // === middleware ===
