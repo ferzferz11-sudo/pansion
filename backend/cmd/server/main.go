@@ -255,10 +255,13 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 		})
 		rr.Post("/api/v1/settings/roles", func(w http.ResponseWriter, r *http.Request) {
 			pid := ctxStr(r, "pid")
-			var b struct{ Name string `json:"name"` }
+			var b struct {
+				Name        string `json:"name"`
+				Description string `json:"description"`
+			}
 			json.NewDecoder(r.Body).Decode(&b)
 			if b.Name == "" { writeJSON(w, 400, errResp("Укажите название роли")); return }
-			err := sR.CreateRole(r.Context(), pid, b.Name)
+			err := sR.CreateRole(r.Context(), pid, b.Name, b.Description)
 			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
 			writeJSON(w, 201, okResp("created"))
 		})
