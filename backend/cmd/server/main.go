@@ -110,7 +110,14 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 
 		rr.Post("/api/v1/users", func(w http.ResponseWriter, r *http.Request) {
 			pid := ctxStr(r, "pid")
-			var b struct{ Email, Phone, FirstName, LastName, Role, Password string }
+			var b struct {
+				Email     string `json:"email"`
+				Phone     string `json:"phone"`
+				FirstName string `json:"first_name"`
+				LastName  string `json:"last_name"`
+				Role      string `json:"role"`
+				Password  string `json:"password"`
+			}
 			json.NewDecoder(r.Body).Decode(&b)
 			if b.Password == "" { b.Password = "1234" }
 			email := b.Email
@@ -125,7 +132,15 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 		})
 
 		rr.Put("/api/v1/users", func(w http.ResponseWriter, r *http.Request) {
-			var b struct{ ID, Email, Phone, FirstName, LastName, Role, Status string }
+			var b struct {
+				ID        string `json:"id"`
+				Email     string `json:"email"`
+				Phone     string `json:"phone"`
+				FirstName string `json:"first_name"`
+				LastName  string `json:"last_name"`
+				Role      string `json:"role"`
+				Status    string `json:"status"`
+			}
 			json.NewDecoder(r.Body).Decode(&b)
 			err := userRepo.Update(r.Context(), &domain.User{
 				ID: b.ID, Email: b.Email, Phone: b.Phone,
