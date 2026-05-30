@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/golang-jwt/jwt/v5"
-
 	"github.com/ferzferz11-sudo/pansion/internal/service"
 )
 
@@ -75,6 +73,3 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 func UserID(ctx context.Context) string    { v, _ := ctx.Value(CtxUserID).(string); return v }
 func PensionID(ctx context.Context) string { v, _ := ctx.Value(CtxPensionID).(string); return v }
 func Role(ctx context.Context) string      { v, _ := ctx.Value(CtxRole).(string); return v }
-
-// Unused import fix: _ = time.Now()
-var _ = jwt.NewWithClaims

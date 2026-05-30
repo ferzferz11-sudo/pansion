@@ -24,11 +24,12 @@ func NewRepository(db *pgxpool.Pool, logger *slog.Logger) *Repository {
 }
 
 // GetByEmail finds a user by email (web login).
+// Uses COALESCE for nullable columns to avoid pgx NULL scan errors.
 func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	var u domain.User
 	err := r.db.QueryRow(ctx, `
-		SELECT id, pension_id, email, phone, password_hash, first_name, last_name,
-		       role, status, created_at, updated_at
+		SELECT id, pension_id, COALESCE(email, ''), COALESCE(phone, ''), password_hash,
+		       first_name, last_name, role, status, created_at, updated_at
 		FROM users WHERE email = $1 LIMIT 1
 	`, email).Scan(&u.ID, &u.PensionID, &u.Email, &u.Phone,
 		&u.PasswordHash, &u.FirstName, &u.LastName,
@@ -46,8 +47,8 @@ func (r *Repository) GetByEmail(ctx context.Context, email string) (*domain.User
 func (r *Repository) GetByPhone(ctx context.Context, phone string) (*domain.User, error) {
 	var u domain.User
 	err := r.db.QueryRow(ctx, `
-		SELECT id, pension_id, email, phone, password_hash, first_name, last_name,
-		       role, status, created_at, updated_at
+		SELECT id, pension_id, COALESCE(email, ''), COALESCE(phone, ''), password_hash,
+		       first_name, last_name, role, status, created_at, updated_at
 		FROM users WHERE phone = $1 LIMIT 1
 	`, phone).Scan(&u.ID, &u.PensionID, &u.Email, &u.Phone,
 		&u.PasswordHash, &u.FirstName, &u.LastName,
@@ -65,8 +66,8 @@ func (r *Repository) GetByPhone(ctx context.Context, phone string) (*domain.User
 func (r *Repository) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	var u domain.User
 	err := r.db.QueryRow(ctx, `
-		SELECT id, pension_id, email, phone, password_hash, first_name, last_name,
-		       role, status, created_at, updated_at
+		SELECT id, pension_id, COALESCE(email, ''), COALESCE(phone, ''), password_hash,
+		       first_name, last_name, role, status, created_at, updated_at
 		FROM users WHERE id = $1 LIMIT 1
 	`, id).Scan(&u.ID, &u.PensionID, &u.Email, &u.Phone,
 		&u.PasswordHash, &u.FirstName, &u.LastName,
