@@ -1,0 +1,140 @@
+import { StyleSheet } from 'react-native';
+
+export const colors = {
+  primary: '#2563eb',
+  primaryLight: '#dbeafe',
+  success: '#22c55e',
+  successLight: '#dcfce7',
+  warning: '#f59e0b',
+  warningLight: '#fef3c7',
+  danger: '#ef4444',
+  dangerLight: '#fee2e2',
+  gray50: '#f9fafb',
+  gray100: '#f3f4f6',
+  gray200: '#e5e7eb',
+  gray300: '#d1d5db',
+  gray400: '#9ca3af',
+  gray500: '#6b7280',
+  gray600: '#4b5563',
+  gray700: '#374151',
+  gray800: '#1f2937',
+  white: '#ffffff',
+  black: '#000000',
+
+  // Status
+  vacant: '#22c55e',
+  booked: '#3b82f6',
+  occupied: '#f59e0b',
+  checking_out: '#f97316',
+  sos: '#ef4444',
+  bg: '#f9fafb',
+  card: '#ffffff',
+};
+
+export const commonStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.bg,
+  },
+  content: {
+    padding: 16,
+  },
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.gray800,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: colors.gray500,
+  },
+  label: {
+    fontSize: 13,
+    color: colors.gray500,
+    marginBottom: 2,
+  },
+  value: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.gray800,
+  },
+  input: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: colors.gray800,
+  },
+  button: {
+    backgroundColor: colors.primary,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonSecondary: {
+    backgroundColor: colors.gray100,
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonSecondaryText: {
+    color: colors.gray700,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    fontSize: 11,
+    fontWeight: '600',
+    overflow: 'hidden',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: colors.gray200,
+    marginVertical: 8,
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 8,
+  },
+  emptyText: {
+    color: colors.gray400,
+    fontSize: 15,
+    textAlign: 'center',
+    paddingVertical: 32,
+  },
+});

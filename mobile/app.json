@@ -1,25 +1,30 @@
 {
   "expo": {
-    "name": "Родные Пенаты",
-    "slug": "pansion",
-    "version": "0.1.0",
+    "name": "Pansion CRM",
+    "slug": "pansion-crm",
+    "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563eb"
     },
-    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pansion.app"
+      "bundleIdentifier": "com.pansion.crm"
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2563eb",
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
-      "package": "com.pansion.app"
+      "package": "com.pansion.crm",
+      "permissions": ["INTERNET"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
     }
   }
 }
