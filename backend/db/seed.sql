@@ -72,7 +72,7 @@ BEGIN
     FOR i IN 1..n LOOP
       t := tt[1 + (i % 3)];
       st := CASE WHEN random() < 0.3 THEN 'completed' WHEN random() < 0.5 THEN 'in_progress' ELSE 'pending' END;
-      INSERT INTO maid_tasks (pension_id, room_id, task_type, status) VALUES (fid, r.id, t, st);
+      INSERT INTO maid_tasks (pension_id, room_id, task_type, status) VALUES ((SELECT id FROM pensions LIMIT 1), r.id, t, st);
     END LOOP;
   END LOOP;
 END$$;
