@@ -93,6 +93,7 @@ function RoomStatusSegment({ label, count, total, color }: RoomStatusSegmentProp
 export default function DashboardPage() {
   const { RL } = useLang();
   const [data, setData] = useState<DashboardData | null>(null);
+  const [categories, setCategories] = useState<{category: string, total: number}[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -100,8 +101,12 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      const result = await api.get<DashboardData>('/dashboard');
+      const [result, cats] = await Promise.all([
+        api.get<DashboardData>('/dashboard'),
+        api.get<{category: string, total: number}[]>('/finance/categories'),
+      ]);
       setData(result);
+      setCategories(cats);
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : RL('error');
@@ -114,6 +119,14 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboard();
   }, [fetchDashboard]);
+
+  const getCatLabel = (cat: string) => {
+    const labels: Record<string, string> = {
+      rent: 'Проживание', food: 'Питание', chemicals: 'Химия',
+      salary: 'Зарплата', maintenance: 'Обслуживание', utilities: 'Коммунальные', other: 'Другое',
+    };
+    return labels[cat] || cat;
+  };
 
   // ── Loading state ──────────────────────────────────────────────────────
   if (loading) {
@@ -263,6 +276,54 @@ export default function DashboardPage() {
                   {finance.balance >= 0 ? '+' : ''}{finance.balance.toLocaleString()}
                 </span>
               </div>
+
+              {/* Categories pie chart */}
+              {categories.length > 0 && (
+                <div className="pt-3 border-t border-gray-100">
+                  <h4 className="text-sm font-medium text-gray-600 mb-3">{RL('expensesByCategory')}</h4>
+                  <div className="flex items-center gap-4">
+                    {/* Pie chart */}
+                    <div className="w-24 h-24 relative flex-shrink-0">
+                      <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {(() => {
+                          const cats = categories;
+                          const total = cats.reduce((sum, c) => sum + c.total, 0);
+                          let cumAngle = 0;
+                          const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+                          return cats.map((c, i) => {
+                            const pct = c.total / total;
+                            const angle = pct * 360;
+                            const startAngle = cumAngle;
+                            cumAngle += angle;
+                            const x1 = 50 + 40 * Math.cos((startAngle - 90) * Math.PI / 180);
+                            const y1 = 50 + 40 * Math.sin((startAngle - 90) * Math.PI / 180);
+                            const x2 = 50 + 40 * Math.cos((startAngle + angle - 90) * Math.PI / 180);
+                            const y2 = 50 + 40 * Math.sin((startAngle + angle - 90) * Math.PI / 180);
+                            const largeArc = angle > 180 ? 1 : 0;
+                            return (
+                              <path key={i} d={`M 50 50 L ${x1} ${y1} A 40 40 0 ${largeArc} 1 ${x2} ${y2} Z`}
+                                fill={colors[i % colors.length]} stroke="white" strokeWidth="1" />
+                            );
+                          });
+                        })()}
+                      </svg>
+                    </div>
+                    {/* Legend */}
+                    <div className="flex-1 space-y-1">
+                      {categories.map((c, i) => {
+                        const colors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-green-500', 'bg-blue-500', 'bg-purple-500', 'bg-pink-500'];
+                        return (
+                          <div key={i} className="flex items-center gap-2 text-xs">
+                            <span className={`w-2 h-2 rounded-full ${colors[i % colors.length]}`} />
+                            <span className="text-gray-600 flex-1">{getCatLabel(c.category)}</span>
+                            <span className="font-medium text-gray-800">{c.total.toLocaleString()}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>

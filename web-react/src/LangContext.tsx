@@ -22,7 +22,7 @@ interface CommonStrings {
   checkIn: string; checkOut: string; passport: string;
   // Finance
   // Room status
-  roomStatus: string; totalRooms: string;
+  roomStatus: string; totalRooms: string; expensesByCategory: string;
   // Finance
   financeSummary: string;
   // Medical
@@ -65,7 +65,7 @@ const COMMON_RU: CommonStrings = {
   guests: 'Постояльцы', queue: 'Ожидает', archived: 'Архив',
   checkIn: 'Заселение', checkOut: 'Выселение', passport: 'Паспорт',
   finance: 'Финансы', transactions: 'Транзакции', income: 'Доход', expense: 'Расход', balance: 'Баланс',
-  roomStatus: 'Статус номеров', totalRooms: 'Всего номеров', financeSummary: 'Финансовый итог',
+  roomStatus: 'Статус номеров', totalRooms: 'Всего номеров', expensesByCategory: 'Расходы по категориям', financeSummary: 'Финансовый итог',
   medical: 'Медицина', medication: 'Препарат', dosage: 'Дозировка', frequency: 'Частота',
   startDate: 'Дата начала', endDate: 'Дата окончания', assignedTo: 'Назначено',
   prescriptions: 'Назначения', todayLog: 'Журнал на сегодня',
@@ -94,7 +94,7 @@ const COMMON_EN: CommonStrings = {
   guests: 'Guests', queue: 'Queue', archived: 'Archived',
   checkIn: 'Check-in', checkOut: 'Check-out', passport: 'Passport',
   finance: 'Finance', transactions: 'Transactions', income: 'Income', expense: 'Expense', balance: 'Balance',
-  roomStatus: 'Room Status', totalRooms: 'Total rooms', financeSummary: 'Finance Summary',
+  roomStatus: 'Room Status', totalRooms: 'Total rooms', expensesByCategory: 'Expenses by Category', financeSummary: 'Finance Summary',
   medical: 'Medical', medication: 'Medication', dosage: 'Dosage', frequency: 'Frequency',
   startDate: 'Start Date', endDate: 'End Date', assignedTo: 'Assigned To',
   prescriptions: 'Prescriptions', todayLog: "Today's Log",

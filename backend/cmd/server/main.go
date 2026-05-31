@@ -122,6 +122,34 @@ func main() {
 		})
 	})
 
+	// Finance categories breakdown (inline JWT auth).
+	r.Get("/api/v1/finance/categories", func(w http.ResponseWriter, r *http.Request) {
+		auth_h := r.Header.Get("Authorization")
+		if len(auth_h) < 8 { writeJSON(w, 401, errResp("Unauthorized")); return }
+		claims, err := jwtSvc.Validate(auth_h[7:])
+		if err != nil { writeJSON(w, 401, errResp("Invalid token")); return }
+		pid := claims.PensionID
+		rows, err := pool.Query(r.Context(), `
+			SELECT category, SUM(amount) as total
+			FROM transactions
+			WHERE pension_id=$1 AND type='expense'
+			GROUP BY category
+			ORDER BY total DESC`, pid)
+		if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
+		defer rows.Close()
+		type cat struct {
+			Category string  `json:"category"`
+			Total    float64 `json:"total"`
+		}
+		out := []cat{}
+		for rows.Next() {
+			var c cat
+			rows.Scan(&c.Category, &c.Total)
+			out = append(out, c)
+		}
+		writeJSON(w, 200, out)
+	})
+
 	// Room status update (inline JWT auth).
 	r.Put("/api/v1/rooms/{id}/status", func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("Authorization") == "" { writeJSON(w, 401, errResp("Unauthorized")); return }
