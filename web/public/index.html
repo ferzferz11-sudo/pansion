@@ -1,11 +1,253 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Родные Пенаты</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Родные Пенаты — CRM</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .room-vacant  { background:#dcfce7; border-color:#22c55e; color:#166534; }
+    .room-booked   { background:#fef3c7; border-color:#f59e0b; color:#92400e; }
+    .room-occupied { background:#fee2e2; border-color:#ef4444; color:#991b1b; }
+    .room-checkout { background:#e0e7ff; border-color:#6366f1; color:#3730a3; }
+    @keyframes sos-pulse {
+      0%,100% { box-shadow:0 0 0 0 rgba(239,68,68,0.7); }
+      50% { box-shadow:0 0 0 12px rgba(239,68,68,0); }
+    }
+    .sos-pulse { animation:sos-pulse 1.5s ease-in-out infinite; }
+  </style>
 </head>
-<body>
-  <div id="root"></div>
+<body class="bg-gray-100 min-h-screen" id="app">
+
+<!-- ЛОГИН -->
+<div id="login-screen" class="min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md mx-4">
+    <div class="text-center mb-6">
+      <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-800">Родные Пенаты</h1>
+      <p class="text-gray-500">Система управления пансионатом</p>
+    </div>
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Электронная почта</label>
+        <input type="email" id="login-email" value="admin@pansion.local"
+          class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" required>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Пароль</label>
+        <input type="password" id="login-password" value="admin123"
+          class="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" required>
+      </div>
+      <div id="login-error" class="text-red-500 text-sm hidden"></div>
+      <button type="submit" class="w-full bg-blue-600 text-white rounded-lg py-2.5 hover:bg-blue-700 font-medium transition">Войти в систему</button>
+    </form>
+    <div class="mt-5 p-3 bg-gray-50 rounded-lg text-xs text-gray-500 space-y-0.5">
+      <p class="font-medium mb-1">Демо-аккаунты (<b>пароль: admin123</b>):</p>
+      <div><span class="text-gray-400 w-24 inline-block">Владелец:</span> admin@pansion.local</div>
+      <div><span class="text-gray-400 w-24 inline-block">Управляющий:</span> manager@pansion.local</div>
+      <div><span class="text-gray-400 w-24 inline-block">Врач:</span> doctor@pansion.local</div>
+      <div><span class="text-gray-400 w-24 inline-block">Горничная:</span> sidorova@pansion.local</div>
+    </div>
+  </div>
+</div>
+
+<!-- ОСНОВНОЙ ЭКРАН -->
+<div id="main-app" class="hidden">
+  <nav class="bg-white shadow-sm border-b px-3 sm:px-6 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xs">РП</div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold text-gray-800">Родные Пенаты</h1>
+        <p id="user-info" class="text-xs text-gray-500"></p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <div id="sos-indicator" class="hidden items-center gap-1 sm:gap-2 text-red-600 font-bold sos-pulse px-2 sm:px-3 py-1 rounded-full bg-red-50 text-xs sm:text-sm">
+        <span class="w-2 h-2 bg-red-600 rounded-full"></span>
+        <span id="sos-count">0</span> SOS
+      </div>
+      <span id="ws-status" class="hidden sm:flex items-center gap-1 text-xs">
+        <span class="w-2 h-2 rounded-full bg-gray-400" id="ws-dot"></span>
+        <span id="ws-label" class="text-gray-400">...</span>
+      </span>
+      <div class="relative">
+        <button onclick="toggleSettingsMenu()" class="p-2 rounded-lg hover:bg-gray-100 transition text-gray-500" title="Настройки">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        </button>
+        <div id="settings-menu" class="hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border z-50 py-1">
+          <button onclick="openSettingsPanel(); toggleSettingsMenu()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+            Настройки вкладок
+          </button>
+          <button onclick="openRolesPanel(); toggleSettingsMenu()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Роли
+          </button>
+          <button onclick="toggleLang()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center justify-between">
+            <span class="flex items-center gap-2"><svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.12"/></svg> Язык</span>
+            <span id="lang-label" class="text-xs text-gray-400">RU</span>
+          </button>
+          <hr class="my-1">
+          <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            Выход
+          </button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="sos-banner" class="hidden bg-red-600 text-white px-6 py-3 font-bold text-center"></div>
+
+  <div class="px-3 sm:px-6 pt-3">
+    <div class="flex gap-0 border-b overflow-x-auto" id="tabs-bar"></div>
+  </div>
+
+  <div class="p-3 sm:p-6" id="panels-container"></div>
+</div>
+
+
+<!-- ОВЕРЛЕЙ: Настройки видимости вкладок -->
+<div id="settings-overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-4 border-b">
+      <h3 class="text-lg font-bold flex items-center gap-2">
+        <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Настройки
+      </h3>
+      <button onclick="closeSettingsPanel()" class="p-1 rounded hover:bg-gray-100 text-gray-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+    <div class="p-4">
+      <h3 class="font-medium mb-1">Управление видимостью вкладок</h3>
+      <p class="text-sm text-gray-500 mb-4">Управляйте тем, какие разделы видны каждой роли сотрудников.</p>
+      <div id="settings-tabs-list" class="space-y-3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ОВЕРЛЕЙ: Управление ролями -->
+<div id="roles-overlay" class="hidden fixed inset-0 bg-black/40 z-40 flex items-center justify-center">
+  <div class="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 max-h-[80vh] overflow-y-auto">
+    <div class="flex items-center justify-between p-4 border-b">
+      <h3 class="text-lg font-bold">Управление ролями</h3>
+      <button onclick="closeRolesPanel()" class="p-1 rounded hover:bg-gray-100 text-gray-400">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-4">
+      <p class="text-sm text-gray-500 mb-4">Создавайте и удаляйте роли. При удалении роли все сотрудники с этой ролью будут удалены.</p>
+      <div class="flex items-center justify-between mb-4">
+        <span class="text-sm text-gray-500">Список ролей</span>
+        <button onclick="openRoleModal()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">+ Создать роль</button>
+      </div>
+      <div id="settings-roles-list" class="space-y-2"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SOS МОДАЛКА -->
+<div id="sos-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 max-w-sm w-full mx-4 text-center">
+    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+      <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.99-.833-2.76 0L3.052 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+    </div>
+    <h3 class="text-xl font-bold text-red-600 mb-2">ВНИМАНИЕ!</h3>
+    <p id="sos-modal-msg" class="text-gray-600 mb-2"></p>
+    <p id="sos-modal-time" class="text-sm text-gray-400 mb-4"></p>
+    <button onclick="dismissSos()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700">Принять</button>
+  </div>
+</div>
+
+<!-- МОДАЛКА: Добавить сотрудника -->
+<div id="user-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+    <h3 class="text-lg font-bold mb-4" id="user-modal-title">Добавить сотрудника</h3>
+    <form id="user-form" class="space-y-3">
+      <input type="hidden" id="user-form-id">
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-sm text-gray-600 mb-1">Имя</label><input id="user-fn" required class="w-full border rounded px-3 py-2"></div>
+        <div><label class="block text-sm text-gray-600 mb-1">Фамилия</label><input id="user-ln" required class="w-full border rounded px-3 py-2"></div>
+      </div>
+      <div><label class="block text-sm text-gray-600 mb-1">Email</label><input type="email" id="user-email" class="w-full border rounded px-3 py-2" placeholder="auto if empty"></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-sm text-gray-600 mb-1">Телефон</label><input id="user-phone" class="w-full border rounded px-3 py-2"></div>
+        <div><label class="block text-sm text-gray-600 mb-1">Роль</label>
+          <select id="user-role" class="w-full border rounded px-3 py-2">
+            <option value="maid">Горничная</option>
+            <option value="doctor">Врач</option>
+            <option value="administrator">Администратор</option>
+            <option value="manager">Управляющий</option>
+          </select>
+        </div>
+      </div>
+      <div><label class="block text-sm text-gray-600 mb-1">Пароль</label><input id="user-pw" class="w-full border rounded px-3 py-2" placeholder="По умолчанию: 1234"></div>
+      <div id="user-form-error" class="text-red-500 text-sm hidden"></div>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-blue-600 text-white rounded-lg py-2 hover:bg-blue-700">Сохранить</button>
+        <button type="button" onclick="closeUserModal()" class="flex-1 bg-gray-200 rounded-lg py-2 hover:bg-gray-300">Отмена</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+
+
+<script>
+var token=localStorage.getItem('pansion_token')||null;
+var currentUser=null;
+var allTabs=[];
+var ROLE_NAMES_RU={owner:'Владелец',manager:'Управляющий',administrator:'Администратор',doctor:'Врач',maid:'Горничная'};
+var ROLE_NAMES_EN={owner:'Owner',manager:'Manager',administrator:'Administrator',doctor:'Doctor',maid:'Maid'};
+var currentLang=localStorage.getItem('pansion_lang')||'ru';
+var RL=function(r){return (currentLang==='en'?ROLE_NAMES_EN:ROLE_NAMES_RU)[r]||r;};
+var TL=function(t){var RU={dashboard:'Панель управления',chessboard:'Номерной фонд',tasks:'Задачи',guests:'Постояльцы',finance:'Финансы',medical:'Медицина',sos:'SOS',users:'Сотрудники'};var EN={dashboard:'Dashboard',chessboard:'Rooms',tasks:'Tasks',guests:'Guests',finance:'Finance',medical:'Medical',sos:'SOS',users:'Staff'};return (currentLang==='en'?EN:RU)[t]||t;};
+var api=function(path,opts){opts=opts||{};var h={'Content-Type':'application/json'};if(token)h.Authorization='Bearer '+token;if(opts.headers)Object.assign(h,opts.headers);return fetch('/api/v1'+path,Object.assign({},opts,{headers:h}));};
+document.getElementById('login-form').addEventListener('submit',function(e){e.preventDefault();var em=document.getElementById('login-email').value;var pw=document.getElementById('login-password').value;var err=document.getElementById('login-error');fetch('/api/v1/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:em,password:pw})}).then(function(r){if(!r.ok){err.textContent='Неверная почта или пароль';err.classList.remove('hidden');return null;}return r.json();}).then(function(d){if(!d)return;token=d.token;currentUser=d.user;localStorage.setItem('pansion_token',token);localStorage.setItem('pansion_user',JSON.stringify(currentUser));err.classList.add('hidden');enterApp();}).catch(function(){err.textContent='Ошибка сети';err.classList.remove('hidden');});});
+function logout(){token=null;currentUser=null;localStorage.removeItem('pansion_token');localStorage.removeItem('pansion_user');document.getElementById('main-app').classList.add('hidden');document.getElementById('login-screen').classList.remove('hidden');}
+function enterApp(){document.getElementById('login-screen').classList.add('hidden');document.getElementById('main-app').classList.remove('hidden');document.getElementById('user-info').textContent=RL(currentUser.role)+' — '+currentUser.first_name+' '+currentUser.last_name;api('/settings/tabs').then(function(r){return r.json();}).then(function(t){allTabs=t;}).catch(function(){}).finally(function(){renderTabs();if(getVisibleTabs().length)showTab(getVisibleTabs()[0]);});}
+function getVisibleTabs(){var role=currentUser.role;var adminTabs=(role==='owner'||role==='manager')?['users']:[];var vfr=allTabs.filter(function(t){return t.role===role&&t.visible;}).map(function(t){return t.tab_key;});var result=vfr.length?vfr:['sos'];return ['dashboard'].concat(adminTabs).concat(result);}
+function renderTabs(){var bar=document.getElementById('tabs-bar');var visible=getVisibleTabs();bar.innerHTML=visible.map(function(t){return '<button onclick="showTab(\''+t+'\')" id="tab-'+t+'" class="px-3 sm:px-4 py-2 font-medium text-sm whitespace-nowrap text-blue-600 border-b-2 border-blue-600">'+(TL(t)||t)+'</button>';}).join('');renderPanels(visible);}
+function showTab(name){getVisibleTabs().forEach(function(t){var b=document.getElementById('tab-'+t);if(!b)return;if(t===name){b.classList.add('text-blue-600','border-b-2','border-blue-600');b.classList.remove('text-gray-500');}else{b.classList.remove('text-blue-600','border-b-2','border-blue-600');b.classList.add('text-gray-500');}});document.querySelectorAll('[data-panel]').forEach(function(p){p.classList.add('hidden');});var panel=document.getElementById('panel-'+name);if(panel)panel.classList.remove('hidden');if(name==='chessboard')loadRooms();else if(name==='tasks')loadTasks('all');else if(name==='guests')loadGuests();else if(name==='finance')loadFinance();else if(name==='dashboard')loadDashboard();else if(name==='users')loadUsers();}
+function renderPanels(visible){var c=document.getElementById('panels-container');c.innerHTML='';var addPanel=function(id,html){c.innerHTML+='<div id="panel-'+id+'" data-panel class="hidden">'+html+'</div>';};addPanel('dashboard','<h2 class="text-lg font-semibold mb-4">Панель управления</h2><div id="dashboard-content"><div class="text-center text-gray-400 py-8">Загрузка...</div></div>');if(visible.includes('chessboard'))addPanel('chessboard','<h2 class="text-lg font-semibold mb-4">Номерной фонд</h2><div id="rooms-grid" class="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2"></div>');if(visible.includes('tasks'))addPanel('tasks','<h2 class="text-lg font-semibold mb-4">Задачи</h2><div id="tasks-list" class="space-y-2"></div>');if(visible.includes('guests'))addPanel('guests','<h2 class="text-lg font-semibold mb-4">Постояльцы</h2><div class="bg-white rounded-lg border overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b"><tr><th class="px-4 py-2 text-left">ФИО</th><th class="px-4 py-2 text-left">Диета</th><th class="px-4 py-2 text-left">Номер</th><th class="px-4 py-2 text-left">Статус</th></tr></thead><tbody id="guests-tbody"></tbody></table></div>');if(visible.includes('finance'))addPanel('finance','<h2 class="text-lg font-semibold mb-4">Финансы</h2><div id="finance-content"></div>');if(visible.includes('medical'))addPanel('medical','<h2 class="text-lg font-semibold mb-4">Лист назначений</h2><div class="text-gray-400 text-center py-12">Раздел в разработке</div>');if(visible.includes('sos'))addPanel('sos','<h2 class="text-lg font-semibold mb-4">Экстренный вызов</h2><div class="max-w-md mx-auto text-center"><button onclick="sendSos()" class="w-36 h-36 rounded-full bg-red-600 text-white text-2xl font-bold sos-pulse">SOS</button></div>');addPanel('users','<div class="flex items-center justify-between mb-4"><h2 class="text-lg font-semibold">Сотрудники</h2><button onclick="openUserModal()" class="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">+ Добавить</button></div><div class="bg-white rounded-lg border overflow-x-auto"><table class="w-full text-sm"><thead class="bg-gray-50 border-b"><tr><th class="px-4 py-2 text-left">ФИО</th><th class="px-4 py-2 text-left">Роль</th><th class="px-4 py-2 text-left">Email</th><th class="px-4 py-2 text-left">Телефон</th><th class="px-4 py-2 text-left">Статус</th><th class="px-4 py-2 text-right">Действия</th></tr></thead><tbody id="users-tbody"></tbody></table></div>');}
+function loadRooms(){api('/rooms/chessboard').then(function(r){return r.json();}).then(renderRooms).catch(function(){});}
+function renderRooms(rooms){var g=document.getElementById('rooms-grid');if(!g)return;g.innerHTML='';var sl={vacant:'Свободно',booked:'Бронь',occupied:'Занято',checking_out_today:'Выезд'};rooms.forEach(function(r){g.innerHTML+='<div id="room-'+r.id+'" class="room-'+r.status+' border-2 rounded-lg p-2 text-center cursor-pointer"><div class="font-bold text-lg">'+r.number+'</div><div class="text-xs mt-1">'+sl[r.status]+'</div></div>';});g.querySelectorAll('[id^="room-"]').forEach(function(el){el.onclick=function(){cycleRoom(el);};});}
+function cycleRoom(el){var order=['vacant','booked','occupied','checking_out_today'];var sl={vacant:'Свободно',booked:'Бронь',occupied:'Занято',checking_out_today:'Выезд'};var cur=el.className.match(/room-(\w+)/)[1];var next=order[(order.indexOf(cur)+1)%order.length];el.className=el.className.replace(/room-\w+/,'room-'+next);el.querySelector('.mt-1').textContent=sl[next];}
+function loadTasks(s){api('/maid/tasks?status='+(s==='all'?'all':s)).then(function(r){return r.json();}).then(renderTasks).catch(function(){});}
+function renderTasks(tasks){var list=document.getElementById('tasks-list');if(!list)return;list.innerHTML='';if(!tasks.length){list.innerHTML='<div class="text-center text-gray-400 py-8">Нет задач</div>';return;}var tl={linen_change:'Смена белья',wet_cleaning:'Влажная уборка',watering_flowers:'Полив цветов'};tasks.forEach(function(t){var el=document.createElement('div');el.className='bg-white rounded-lg border p-3 flex items-center justify-between';el.innerHTML='<div>Комната '+(t.room_number||'?')+' · '+(tl[t.task_type]||t.task_type)+'</div><div>'+(t.status==='completed'?'<span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Готово</span>':'<button onclick="completeTask(\''+t.id+'\')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded">Готово</button>')+'</div>';list.appendChild(el);});}
+function completeTask(id){api('/maid/tasks/complete',{method:'POST',body:JSON.stringify({task_id:id})}).catch(function(){});loadTasks('all');}
+function loadGuests(){api('/guests').then(function(r){return r.json();}).then(function(guests){var tb=document.getElementById('guests-tbody');if(!tb)return;tb.innerHTML=guests.map(function(g){return '<tr class="border-b"><td class="px-4 py-2">'+g.last_name+' '+g.first_name+'</td><td class="px-4 py-2">'+(g.diet_type||'—')+'</td><td class="px-4 py-2">'+(g.room_number||'?')+'</td><td class="px-4 py-2">'+g.status+'</td></tr>';}).join('');}).catch(function(){});}
+function loadFinance(){api('/finance').then(function(r){return r.json();}).catch(function(){});}
+function sendSos(){api('/sos',{method:'POST',body:JSON.stringify({message:'SOS от '+(currentUser?currentUser.first_name:'')})}).then(function(){var el=document.getElementById('sos-sent-msg');if(el)el.classList.remove('hidden');setTimeout(function(){if(el)el.classList.add('hidden');},3000);}).catch(function(){});}
+function loadUsers(){api('/users').then(function(r){return r.json();}).then(function(users){var tb=document.getElementById('users-tbody');if(!tb)return;tb.innerHTML=users.map(function(u){return '<tr class="border-b hover:bg-gray-50"><td class="px-4 py-2">'+u.last_name+' '+u.first_name+'</td><td class="px-4 py-2"><span class="text-xs px-2 py-0.5 rounded bg-gray-100">'+RL(u.role)+'</span></td><td class="px-4 py-2">'+(u.email||'—')+'</td><td class="px-4 py-2">'+(u.phone||'—')+'</td><td class="px-4 py-2"><span class="text-xs px-2 py-0.5 rounded '+(u.status==='active'?'bg-green-100 text-green-700':'bg-gray-100')+'">'+(u.status==='active'?'Активен':'Неактивен')+'</span></td><td class="px-4 py-2 text-right"><button onclick="editUser('+JSON.stringify(u).replace(/"/g,'&quot;')+')" class="text-blue-600 text-xs mr-2">Изменить</button><button onclick="deleteUser(\''+u.id+'\')" class="text-red-600 text-xs">Удалить</button></td></tr>';}).join('');}).catch(function(){});}
+function openUserModal(){document.getElementById('user-modal').classList.remove('hidden');document.getElementById('user-modal-title').textContent='Добавить сотрудника';document.getElementById('user-form').reset();document.getElementById('user-form-id').value='';loadRolesForSelect();}
+function closeUserModal(){document.getElementById('user-modal').classList.add('hidden');}
+function editUser(u){document.getElementById('user-modal').classList.remove('hidden');document.getElementById('user-modal-title').textContent='Редактировать сотрудника';document.getElementById('user-form-id').value=u.id||'';document.getElementById('user-fn').value=u.first_name||'';document.getElementById('user-ln').value=u.last_name||'';document.getElementById('user-email').value=u.email||'';document.getElementById('user-phone').value=u.phone||'';document.getElementById('user-role').value=u.role||'maid';document.getElementById('user-pw').value='';}
+function loadRolesForSelect(callback){api('/settings/roles').then(function(r){return r.json();}).then(function(roles){var sel=document.getElementById('user-role');if(!sel)return;var cur=sel.value;sel.innerHTML='';roles.forEach(function(r){var opt=document.createElement('option');opt.value=r.name;opt.textContent=RL(r.name);if(r.name===cur)opt.selected=true;sel.appendChild(opt);});if(callback)callback();}).catch(function(){});}
+document.getElementById('user-form').addEventListener('submit',function(e){e.preventDefault();var errEl=document.getElementById('user-form-error');var id=document.getElementById('user-form-id').value;var body={first_name:document.getElementById('user-fn').value,last_name:document.getElementById('user-ln').value,email:document.getElementById('user-email').value||'',phone:document.getElementById('user-phone').value||'',role:document.getElementById('user-role').value,status:'active'};var pw=document.getElementById('user-pw').value;if(pw)body.password=pw;var method=id?'PUT':'POST';api('/users',{method:method,body:JSON.stringify(id?Object.assign({id:id},body):body)}).then(function(r){if(r.status>=400)return r.text().then(function(t){throw new Error(t||'Ошибка '+r.status);});return r.json();}).then(function(){closeUserModal();loadUsers();}).catch(function(ex){errEl.textContent=ex.message||'Ошибка';errEl.classList.remove('hidden');});});
+function deleteUser(id){if(!confirm('Удалить сотрудника?'))return;api('/users?id='+encodeURIComponent(id),{method:'DELETE'}).then(function(){loadUsers();}).catch(function(){});}
+function loadDashboard(){api('/dashboard').then(function(r){return r.json();}).then(function(d){var c=document.getElementById('dashboard-content');if(!c)return;var h='<div class="grid grid-cols-3 sm:grid-cols-5 gap-3 mb-6">';d.stats.forEach(function(s){h+='<div class="bg-white rounded-lg border p-3 text-center"><div class="text-2xl font-bold">'+s.Count+'</div><div class="text-xs text-gray-500">'+s.Table+'</div></div>';});h+='</div>';if(d.sos_active>0)h+='<div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center text-red-600 font-bold">SOS: '+d.sos_active+'</div>';c.innerHTML=h;}).catch(function(){});}
+function loadRoles(){api('/settings/roles').then(function(r){return r.json();}).then(function(roles){var c=document.getElementById('settings-roles-list');if(!c)return;if(!roles.length){c.innerHTML='<div class="text-gray-400 text-center py-4">Нет ролей</div>';return;}c.innerHTML=roles.map(function(r){return '<div class="bg-white rounded-lg border p-3 flex items-center justify-between"><div><span class="font-medium">'+RL(r.name)+'</span><span class="text-xs text-gray-400 ml-2">('+r.user_count+' сотр.)</span></div><button onclick="deleteRole(\''+r.name+'\','+r.user_count+')" class="text-red-600 text-xs">Удалить</button></div>';}).join('');}).catch(function(){});}
+function openRoleModal(){var name=prompt('Название новой роли:');if(!name||!name.trim())return;api('/settings/roles',{method:'POST',body:JSON.stringify({name:name.trim()})}).then(function(){loadRoles();}).catch(function(){});}
+function deleteRole(name,count){var msg='Удалить роль "'+RL(name)+'"?';if(count>0)msg+='\n\nВНИМАНИЕ: будут удалены все '+count+' сотрудников!';if(!confirm(msg))return;api('/settings/roles?name='+encodeURIComponent(name),{method:'DELETE'}).then(function(){loadRoles();}).catch(function(){});}
+function openRolesPanel(){var o=document.getElementById('roles-overlay');if(o)o.classList.remove('hidden');loadRoles();}
+function closeRolesPanel(){var o=document.getElementById('roles-overlay');if(o)o.classList.add('hidden');}
+function loadSettings(){api('/settings/tabs').then(function(r){return r.json();}).then(function(atd){var roles=['owner','manager','administrator','doctor','maid'];var tabs=['chessboard','tasks','guests','finance','medical','sos'];var container=document.getElementById('settings-tabs-list');if(!container)return;var h='';roles.forEach(function(role){var label=(currentLang==='en'?ROLE_NAMES_EN:ROLE_NAMES_RU)[role]||role;h+='<div class="bg-white rounded-lg border p-4"><h3 class="font-medium mb-3">'+label+'</h3>';tabs.forEach(function(tab){var st=null;for(var si=0;si<atd.length;si++){if(atd[si].role===role&&atd[si].tab_key===tab){st=atd[si];break;}}if(!st)st={visible:false};h+='<label class="flex items-center justify-between text-sm"><span>'+(TL(tab)||tab)+'</span><input type="checkbox" '+(st.visible?'checked':'')+' onchange="toggleFTab(\''+role+'\',\''+tab+'\',this.checked)"></label>';});h+='</div>';});container.innerHTML=h;}).catch(function(){});}
+function toggleFTab(role,tab,visible){api('/settings/tabs',{method:'POST',body:JSON.stringify({role:role,tab_key:tab,visible:visible})}).catch(function(){});}
+function toggleSettingsMenu(){var m=document.getElementById('settings-menu');if(m)m.classList.toggle('hidden');}
+document.addEventListener('click',function(e){var m=document.getElementById('settings-menu');if(m&&!e.target.closest('.relative'))m.classList.add('hidden');});
+function openSettingsPanel(){var o=document.getElementById('settings-overlay');if(o)o.classList.remove('hidden');loadSettings();}
+function closeSettingsPanel(){var o=document.getElementById('settings-overlay');if(o)o.classList.add('hidden');}
+function toggleLang(){var newLang=currentLang==='ru'?'en':'ru';setLang(newLang);var lbl=document.getElementById('lang-label');if(lbl)lbl.textContent=newLang.toUpperCase();}
+function setLang(lang){currentLang=lang;localStorage.setItem('pansion_lang',lang);renderTabs();var ov=document.getElementById('settings-overlay');if(ov&&!ov.classList.contains('hidden')){loadSettings();}var rv=document.getElementById('roles-overlay');if(rv&&!rv.classList.contains('hidden')){loadRoles();}var lbl=document.getElementById('lang-label');if(lbl)lbl.textContent=lang.toUpperCase();}
+var ws=null;function connectWS(){if(!token)return;try{var proto=location.protocol==='https:'?'wss':'ws';ws=new WebSocket(proto+'://'+location.host+'/api/v1/ws?token='+encodeURIComponent(token));ws.onopen=function(){var d=document.getElementById('ws-dot');if(d)d.className='w-2 h-2 rounded-full bg-green-500';};ws.onclose=function(){var d=document.getElementById('ws-dot');if(d)d.className='w-2 h-2 rounded-full bg-gray-400';setTimeout(connectWS,5000);};ws.onerror=function(){};}catch(e){}}
+function tryAutoLogin(){if(!token)return;api('/rooms/chessboard').then(function(r){if(r.ok){try{currentUser=JSON.parse(localStorage.getItem('pansion_user'));}catch(e){}if(currentUser){enterApp();return;}}token=null;localStorage.removeItem('pansion_token');localStorage.removeItem('pansion_user');}).catch(function(){token=null;localStorage.removeItem('pansion_token');localStorage.removeItem('pansion_user');});}
+tryAutoLogin();connectWS();
+</script>
 </body>
 </html>

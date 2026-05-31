@@ -189,18 +189,12 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 				LastName  string `json:"last_name"`
 				Role      string `json:"role"`
 				Status    string `json:"status"`
+				Password  string `json:"password"`
 			}
-			var req struct {
-				ID, Email, Phone, FirstName, LastName, Role, Status string
-				Password string `json:"password"`
-			}
-			json.NewDecoder(r.Body).Decode(&req)
-			b.ID = req.ID; b.Email = req.Email; b.Phone = req.Phone
-			b.FirstName = req.FirstName; b.LastName = req.LastName
-			b.Role = req.Role; b.Status = req.Status
+			json.NewDecoder(r.Body).Decode(&b)
 			var pwHash string
-			if req.Password != "" {
-				h, _ := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+			if b.Password != "" {
+				h, _ := bcrypt.GenerateFromPassword([]byte(b.Password), bcrypt.DefaultCost)
 				pwHash = string(h)
 			}
 		sql := `
