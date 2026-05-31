@@ -24,13 +24,18 @@ func Authenticate(jwtSvc *service.JWTService, logger *slog.Logger) func(http.Han
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			auth := r.Header.Get("Authorization")
-			if auth == "" || !strings.HasPrefix(auth, "Bearer ") {
+			var token string
+			if auth != "" && strings.HasPrefix(auth, "Bearer ") {
+				token = strings.TrimPrefix(auth, "Bearer ")
+			} else {
+				// Fallback: token from query param (for WebSocket which can't set headers)
+				token = r.URL.Query().Get("token")
+			}
+			if token == "" {
 				http.Error(w, `{"error":"missing or invalid authorization header"}`,
 					http.StatusUnauthorized)
 				return
 			}
-
-			token := strings.TrimPrefix(auth, "Bearer ")
 			claims, err := jwtSvc.Validate(token)
 			if err != nil {
 				logger.Warn("jwt validation failed", "error", err)
