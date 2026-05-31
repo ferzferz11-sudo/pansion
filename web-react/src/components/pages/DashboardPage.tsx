@@ -27,18 +27,18 @@ interface DashboardData {
   sos_active: number;
 }
 
-function parseRoomStats(roomStats: RoomStatsItem[]): { vacant: number; booked: number; occupied: number; checkout: number } {
+function parseRoomStats(roomStats: any[]): { vacant: number; booked: number; occupied: number; checkout: number } {
   const result = { vacant: 0, booked: 0, occupied: 0, checkout: 0 };
-  for (const item of roomStats) {
-    const key = item.Status as keyof typeof result;
-    if (key in result) result[key] = item.Count;
+  for (const item of roomStats || []) {
+    const key = item.Status || item.status;
+    if (key && key in result) result[key as keyof typeof result] = item.Count || item.count;
   }
   return result;
 }
 
-function getStat(stats: DashboardStats[], table: string): number {
-  const found = stats.find(s => s.table === table);
-  return found ? found.count : 0;
+function getStat(stats: any[], table: string): number {
+  const found = stats.find((s: any) => s.Table === table || s.table === table);
+  return found ? (found.Count || found.count) : 0;
 }
 
 // ── Stat card component ────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ export default function DashboardPage() {
           {RL('dashboard')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard label={RL('room') + 's'} value={roomsCount} accent="bg-blue-500" />
+          <StatCard label={RL('rooms')} value={roomsCount} accent="bg-blue-500" />
           <StatCard label={RL('guests')} value={guestsCount} accent="bg-green-500" />
           <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" />
           <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
