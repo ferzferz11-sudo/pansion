@@ -190,7 +190,7 @@ export default function DashboardPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatCard label={RL('rooms')} value={roomsCount} accent="bg-blue-500" />
-          <StatCard label={RL('guests')} value={guestsCount} accent="bg-green-500" />
+          <StatCard label={RL('guestsCount')} value={guestsCount} accent="bg-green-500" />
           <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" />
           <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
           <StatCard label={RL('transactions')} value={transactionsCount} accent="bg-teal-500" />

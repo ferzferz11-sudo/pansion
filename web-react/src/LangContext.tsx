@@ -18,7 +18,7 @@ interface CommonStrings {
   rooms: string; room: string; floor: string;
   vacant: string; booked: string; occupied: string; checkout: string; free: string;
   // Guests
-  guests: string; queue: string; archived: string;
+  guests: string; guestsCount: string; queue: string; archived: string;
   checkIn: string; checkOut: string; passport: string;
   // Finance
   // Room status
@@ -62,7 +62,7 @@ const COMMON_RU: CommonStrings = {
   category: 'Категория', description: 'Описание', type: 'Тип',
   rooms: 'Номера', room: 'Номер', floor: 'Этаж',
   vacant: 'Свободен', booked: 'Бронь', occupied: 'Занят', checkout: 'Выезд', free: 'Свободен',
-  guests: 'Постояльцы', queue: 'Ожидает', archived: 'Архив',
+  guests: 'Постояльцы', guestsCount: 'Постояльцев', queue: 'Ожидает', archived: 'Архив',
   checkIn: 'Заселение', checkOut: 'Выселение', passport: 'Паспорт',
   finance: 'Финансы', transactions: 'Транзакции', income: 'Доход', expense: 'Расход', balance: 'Баланс',
   roomStatus: 'Статус номеров', totalRooms: 'Всего номеров', expensesByCategory: 'Расходы по категориям', financeSummary: 'Финансовый итог',
@@ -91,7 +91,7 @@ const COMMON_EN: CommonStrings = {
   category: 'Category', description: 'Description', type: 'Type',
   rooms: 'Rooms', room: 'Room', floor: 'Floor',
   vacant: 'Vacant', booked: 'Booked', occupied: 'Occupied', checkout: 'Checkout', free: 'Free',
-  guests: 'Guests', queue: 'Queue', archived: 'Archived',
+  guests: 'Guests', guestsCount: 'Guests', queue: 'Queue', archived: 'Archived',
   checkIn: 'Check-in', checkOut: 'Check-out', passport: 'Passport',
   finance: 'Finance', transactions: 'Transactions', income: 'Income', expense: 'Expense', balance: 'Balance',
   roomStatus: 'Room Status', totalRooms: 'Total rooms', expensesByCategory: 'Expenses by Category', financeSummary: 'Finance Summary',
