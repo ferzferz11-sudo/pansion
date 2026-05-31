@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLang } from '../../LangContext';
-import api from '../../api';
-import type { Task, TaskStatus } from '../../types';
+import { api } from '../../api';
 
-type FilterTab = 'all' | TaskStatus;
-
-interface MaidTask extends Task {
+interface MaidTask {
+  id: string;
   room_number?: string;
   task_type?: 'linen_change' | 'wet_cleaning' | 'watering_flowers';
+  status: string;
 }
 
 const TASK_TYPE_LABELS: Record<string, { ru: string; en: string }> = {
@@ -21,8 +20,8 @@ export default function TasksPage() {
   const [tasks, setTasks] = useState<MaidTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeFilter, setActiveFilter] = useState<FilterTab>('all');
-  const [completingId, setCompletingId] = useState<number | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [completingId, setCompletingId] = useState<string | null>(null);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -32,23 +31,18 @@ export default function TasksPage() {
       setTasks(data);
     } catch (err) {
       setError(RL('error'));
-      console.error('Failed to fetch maid tasks:', err);
     } finally {
       setLoading(false);
     }
   }, [RL]);
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks]);
+  useEffect(() => { fetchTasks(); }, [fetchTasks]);
 
-  const completeTask = async (taskId: number) => {
+  const completeTask = async (taskId: string) => {
     setCompletingId(taskId);
     try {
       await api.post('/maid/tasks/complete', { task_id: taskId });
-      setTasks((prev) =>
-        prev.map((t) => (t.id === taskId ? { ...t, status: 'done' as TaskStatus } : t))
-      );
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: 'completed' } : t));
     } catch (err) {
       console.error('Failed to complete task:', err);
     } finally {
@@ -56,110 +50,56 @@ export default function TasksPage() {
     }
   };
 
-  const filteredTasks = activeFilter === 'all'
-    ? tasks
-    : tasks.filter((t) => t.status === activeFilter);
+  const filteredTasks = activeFilter === 'all' ? tasks : tasks.filter(t => t.status === activeFilter);
 
-  const tabs: { key: FilterTab; label: string }[] = [
+  const tabs = [
     { key: 'all', label: RL('all') },
     { key: 'pending', label: RL('pending') },
     { key: 'in_progress', label: RL('inProgress') },
-    { key: 'done', label: RL('done') },
+    { key: 'completed', label: RL('done') },
   ];
 
-  const getStatusLabel = (status: TaskStatus): string => {
-    switch (status) {
-      case 'pending':
-        return RL('pending');
-      case 'in_progress':
-        return RL('inProgress');
-      case 'done':
-        return RL('done');
-      case 'cancelled':
-        return RL('cancelled');
-      default:
-        return status;
-    }
-  };
-
-  const getStatusClass = (status: TaskStatus): string => {
-    switch (status) {
-      case 'pending':
-        return 'status-pending';
-      case 'in_progress':
-        return 'status-in-progress';
-      case 'done':
-        return 'status-done';
-      case 'cancelled':
-        return 'status-cancelled';
-      default:
-        return '';
-    }
-  };
-
-  const getTaskTypeDisplay = (task: MaidTask): string => {
+  const getTaskTypeLabel = (task: MaidTask): string => {
     if (task.task_type && TASK_TYPE_LABELS[task.task_type]) {
-      return TASK_TYPE_LABELS[task.task_type][lang];
+      return TASK_TYPE_LABELS[task.task_type][lang] || task.task_type;
     }
-    return task.title || '';
+    return task.task_type || '';
   };
 
-  if (loading) {
-    return <div className="page loading">{RL('loading')}</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="page error">
-        <p>{error}</p>
-        <button onClick={fetchTasks}>Retry</button>
-      </div>
-    );
-  }
+  if (loading) return <div className="text-center py-8 text-gray-400">{RL('loading')}</div>;
+  if (error) return <div className="text-center py-8 text-red-500">{error}</div>;
 
   return (
-    <div className="page tasks-page">
-      <h1>{TL('tasks')}</h1>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">{TL('tasks')}</h2>
 
-      <div className="filter-tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            className={`filter-tab ${activeFilter === tab.key ? 'active' : ''}`}
-            onClick={() => setActiveFilter(tab.key)}
-          >
+      <div className="flex gap-2 border-b">
+        {tabs.map(tab => (
+          <button key={tab.key} onClick={() => setActiveFilter(tab.key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition ${activeFilter === tab.key ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             {tab.label}
           </button>
         ))}
       </div>
 
       {filteredTasks.length === 0 ? (
-        <p className="no-data">{RL('noData')}</p>
+        <p className="text-center text-gray-400 py-8">{RL('noData')}</p>
       ) : (
-        <div className="task-list">
-          {filteredTasks.map((task) => (
-            <div key={task.id} className="task-card">
-              <div className="task-info">
-                <div className="task-room">
-                  <span className="label">{RL('room')}: </span>
-                  <span className="value">{task.room_number || task.room_id || '-'}</span>
-                </div>
-                <div className="task-type">
-                  <span className="label">{RL('type')}: </span>
-                  <span className="value">{getTaskTypeDisplay(task)}</span>
-                </div>
-                <div className={`task-status ${getStatusClass(task.status)}`}>
-                  <span className="label">{RL('status')}: </span>
-                  <span className="value">{getStatusLabel(task.status)}</span>
-                </div>
+        <div className="space-y-2">
+          {filteredTasks.map(task => (
+            <div key={task.id} className="bg-white rounded-lg border p-3 flex items-center justify-between hover:shadow-sm transition">
+              <div className="space-y-1">
+                <div className="font-medium">{RL('room')} {task.room_number || task.id}</div>
+                <div className="text-sm text-gray-600">{getTaskTypeLabel(task)}</div>
+                <span className={`text-xs px-2 py-0.5 rounded ${task.status === 'completed' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {task.status === 'completed' ? RL('done') : task.status === 'in_progress' ? RL('inProgress') : RL('pending')}
+                </span>
               </div>
               {(task.status === 'pending' || task.status === 'in_progress') && (
-                <button
-                  className="complete-btn"
-                  onClick={() => completeTask(task.id)}
+                <button onClick={() => completeTask(task.id)}
                   disabled={completingId === task.id}
-                >
-                  {completingId === task.id ? RL('loading') : RL('done')}
+                  className="text-sm bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition">
+                  {completingId === task.id ? '...' : RL('done')}
                 </button>
               )}
             </div>
