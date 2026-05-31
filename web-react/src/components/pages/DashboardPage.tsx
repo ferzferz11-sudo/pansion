@@ -228,47 +228,43 @@ export default function DashboardPage() {
           <h3 className="text-base font-semibold text-gray-800 mb-4">
             {RL('financeSummary')}
           </h3>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center text-white">
-                  ↑
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {RL('income')}
+          {finance && (
+            <div className="space-y-4">
+              {/* Bar chart */}
+              <div className="flex items-end gap-2 h-32 px-2">
+                {(() => {
+                  const max = Math.max(finance.income, finance.expense, 1);
+                  const incomeH = (finance.income / max) * 100;
+                  const expenseH = (finance.expense / max) * 100;
+                  return (
+                    <>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-xs font-medium text-green-700">+{finance.income.toLocaleString()}</span>
+                        <div className="w-full bg-green-100 rounded-t-lg relative" style={{ height: `${incomeH}%` }}>
+                          <div className="absolute inset-0 bg-green-500 rounded-t-lg" />
+                        </div>
+                        <span className="text-xs text-gray-500">{RL('income')}</span>
+                      </div>
+                      <div className="flex-1 flex flex-col items-center gap-1">
+                        <span className="text-xs font-medium text-red-700">-{finance.expense.toLocaleString()}</span>
+                        <div className="w-full bg-red-100 rounded-t-lg relative" style={{ height: `${expenseH}%` }}>
+                          <div className="absolute inset-0 bg-red-500 rounded-t-lg" />
+                        </div>
+                        <span className="text-xs text-gray-500">{RL('expense')}</span>
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+              {/* Balance */}
+              <div className={`flex items-center justify-between p-3 rounded-lg ${finance.balance >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                <span className="text-sm font-medium text-gray-700">{RL('balance')}</span>
+                <span className={`text-lg font-bold ${finance.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {finance.balance >= 0 ? '+' : ''}{finance.balance.toLocaleString()}
                 </span>
               </div>
-              <span className="text-lg font-bold text-green-700">
-                +{finance.income.toLocaleString()}
-              </span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-red-500 flex items-center justify-center text-white">
-                  ↓
-                </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {RL('expense')}
-                </span>
-              </div>
-              <span className="text-lg font-bold text-red-700">
-                -{finance.expense.toLocaleString()}
-              </span>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
-              <span className="text-sm font-semibold text-gray-700">
-                {RL('balance')}
-              </span>
-              <span
-                className={`text-xl font-bold ${
-                  finance.balance >= 0 ? 'text-green-700' : 'text-red-700'
-                }`}
-              >
-                {finance.balance >= 0 ? '+' : ''}
-                {finance.balance.toLocaleString()}
-              </span>
-            </div>
-          </div>
+          )}
         </section>
       </div>
     </div>
