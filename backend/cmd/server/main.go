@@ -267,6 +267,84 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
 			writeJSON(w, 200, map[string]interface{}{"status": "deleted", "users_removed": deleted})
 		})
+
+		// Medical: prescriptions list
+		rr.Get("/api/v1/medical/prescriptions", func(w http.ResponseWriter, r *http.Request) {
+			pid := ctxStr(r, "pid")
+			rows, err := pool.Query(r.Context(), `
+				SELECT mp.id, g.first_name || ' ' || g.last_name AS guest_name,
+				       mp.medication_name, mp.dosage, mp.frequency, mp.start_date, mp.end_date
+				FROM medical_prescriptions mp
+				JOIN guests g ON g.id = mp.guest_id
+				WHERE g.pension_id = $1
+				ORDER BY g.last_name, mp.medication_name`, pid)
+			if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
+			defer rows.Close()
+			type pres struct {
+				ID string `json:"id"`
+				GuestName string `json:"guest_name"`
+				Medication string `json:"medication_name"`
+				Dosage string `json:"dosage"`
+				Frequency string `json:"frequency"`
+				StartDate string `json:"start_date"`
+				EndDate string `json:"end_date"`
+			}
+			out := []pres{}
+			for rows.Next() {
+				var p pres
+				rows.Scan(&p.ID, &p.GuestName, &p.Medication, &p.Dosage, &p.Frequency, &p.StartDate, &p.EndDate)
+				out = append(out, p)
+			}
+			writeJSON(w, 200, out)
+		})
+
+		// Medical: today's medication logs
+		rr.Get("/api/v1/medical/logs", func(w http.ResponseWriter, r *http.Request) {
+			pid := ctxStr(r, "pid")
+			rows, err := pool.Query(r.Context(), `
+				SELECT ml.id, g.first_name || ' ' || g.last_name AS guest_name,
+				       mp.medication_name, ml.scheduled_time, ml.status,
+				       COALESCE(u.first_name || ' ' || u.last_name, '') AS nurse_name
+				FROM medication_logs ml
+				JOIN medical_prescriptions mp ON mp.id = ml.prescription_id
+				JOIN guests g ON g.id = mp.guest_id
+				LEFT JOIN users u ON u.id = ml.nurse_id
+				WHERE g.pension_id = $1 AND ml.scheduled_time::date = CURRENT_DATE
+				ORDER BY ml.scheduled_time`, pid)
+			if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
+			defer rows.Close()
+			type log struct {
+				ID string `json:"id"`
+				GuestName string `json:"guest_name"`
+				Medication string `json:"medication_name"`
+				ScheduledTime string `json:"scheduled_time"`
+				Status string `json:"status"`
+				NurseName string `json:"nurse_name"`
+			}
+			out := []log{}
+			for rows.Next() {
+				var l log
+				rows.Scan(&l.ID, &l.GuestName, &l.Medication, &l.ScheduledTime, &l.Status, &l.NurseName)
+				out = append(out, l)
+			}
+			writeJSON(w, 200, out)
+		})
+
+		// Medical: mark medication as taken/skipped
+		rr.Post("/api/v1/medical/logs/toggle", func(w http.ResponseWriter, r *http.Request) {
+			var b struct{ LogID string `json:"log_id"` }
+			json.NewDecoder(r.Body).Decode(&b)
+			uid := ctxStr(r, "uid")
+			tag, err := pool.Exec(r.Context(), `
+				UPDATE medication_logs SET
+					status = CASE WHEN status='taken' THEN 'pending' ELSE 'taken' END,
+					taken_at = CASE WHEN status='pending' THEN NOW() ELSE NULL END,
+					nurse_id = $2
+				WHERE id = $1`, b.LogID, uid)
+			if err != nil { writeJSON(w, 400, errResp(err.Error())); return }
+			if tag.RowsAffected() == 0 { writeJSON(w, 400, errResp("Запись не найдена")); return }
+			writeJSON(w, 200, okResp("ok"))
+		})
 		})
 }
 

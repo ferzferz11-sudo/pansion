@@ -98,3 +98,50 @@ INSERT INTO transactions (pension_id, type, amount, category, description, creat
   ('11111111-1111-1111-1111-111111111111', 'expense',  6000, 'maintenance', 'Ремонт санузла №205',                NOW() - interval '12 days'),
   ('11111111-1111-1111-1111-111111111111', 'expense',  2800, 'maintenance', 'Замена замка №103',                  NOW() - interval '18 days'),
   ('11111111-1111-1111-1111-111111111111', 'expense',  9500, 'maintenance', 'Покраска коридора 3 этаж',            NOW() - interval '20 days');
+
+-- Assign guests to occupied/booked rooms
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '101' LIMIT 1) WHERE first_name = 'Николай' AND last_name = 'Кузнецов';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '102' LIMIT 1) WHERE first_name = 'Татьяна' AND last_name = 'Соколова';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '108' LIMIT 1) WHERE first_name = 'Александр' AND last_name = 'Попов';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '109' LIMIT 1) WHERE first_name = 'Елена' AND last_name = 'Новикова';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '205' LIMIT 1) WHERE first_name = 'Михаил' AND last_name = 'Федоров';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '206' LIMIT 1) WHERE first_name = 'Ольга' AND last_name = 'Морозова';
+UPDATE guests SET room_id = (SELECT id FROM rooms WHERE number = '302' LIMIT 1) WHERE first_name = 'Сергей' AND last_name = 'Волков';
+
+-- Medical prescriptions (doctor Алексей Смирнов)
+INSERT INTO medical_prescriptions (guest_id, doctor_id, medication_name, dosage, frequency, start_date, end_date) VALUES
+  ((SELECT id FROM guests WHERE first_name = 'Николай' AND last_name = 'Кузнецов' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Лизиноприл', '10 мг', '1 раз утром', '2026-05-01', '2026-06-01'),
+  ((SELECT id FROM guests WHERE first_name = 'Николай' AND last_name = 'Кузнецов' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Амлодипин', '5 мг', '1 раз утром', '2026-05-01', '2026-06-01'),
+  ((SELECT id FROM guests WHERE first_name = 'Татьяна' AND last_name = 'Соколова' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Метформин', '850 мг', '2 раза после еды', '2026-04-15', '2026-07-15'),
+  ((SELECT id FROM guests WHERE first_name = 'Татьяна' AND last_name = 'Соколова' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Гликлазид', '60 мг', '1 раз утром', '2026-04-15', '2026-07-15'),
+  ((SELECT id FROM guests WHERE first_name = 'Александр' AND last_name = 'Попов' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Аторвастатин', '20 мг', '1 раз вечером', '2026-03-01', '2026-06-01'),
+  ((SELECT id FROM guests WHERE first_name = 'Елена' AND last_name = 'Новикова' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Омепразол', '20 мг', '1 раз до еды', '2026-05-10', '2026-06-10'),
+  ((SELECT id FROM guests WHERE first_name = 'Михаил' AND last_name = 'Федоров' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Варфарин', '5 мг', '1 раз вечером', '2026-01-01', '2026-07-01'),
+  ((SELECT id FROM guests WHERE first_name = 'Сергей' AND last_name = 'Волков' LIMIT 1),
+   '22222222-2222-2222-2222-222222222224', 'Бисопролол', '5 мг', '1 раз утром', '2026-04-01', '2026-07-01');
+
+-- Medication logs (today's schedule)
+INSERT INTO medication_logs (prescription_id, scheduled_time, status, taken_at, nurse_id)
+SELECT
+  mp.id,
+  CASE
+    WHEN mp.frequency LIKE '%утром%' THEN CURRENT_DATE + interval '8 hours'
+    WHEN mp.frequency LIKE '%вечером%' THEN CURRENT_DATE + interval '20 hours'
+    WHEN mp.frequency LIKE '%2 раза%' THEN CURRENT_DATE + interval '8 hours'
+    ELSE CURRENT_DATE + interval '12 hours'
+  END,
+  CASE (random() * 3)::int
+    WHEN 0 THEN 'taken'
+    WHEN 1 THEN 'pending'
+    ELSE 'taken'
+  END,
+  CASE WHEN (random() * 3)::int < 2 THEN CURRENT_DATE + interval '8 hours' + (random() * 30 * interval 'minute') ELSE NULL END,
+  '22222222-2222-2222-2222-222222222225'  -- Сидорова Анна (maid) as nurse
+FROM medical_prescriptions mp;
