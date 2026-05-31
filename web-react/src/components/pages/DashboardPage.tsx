@@ -5,19 +5,13 @@ import { useLang } from '../../LangContext';
 // ── Dashboard data types ───────────────────────────────────────────────────
 
 interface DashboardStats {
-  rooms_count: number;
-  guests_count: number;
-  users_count: number;
-  tasks_count: number;
-  transactions_count: number;
-  sos_active_count: number;
+  table: string;
+  count: number;
 }
 
-interface RoomStatusBreakdown {
-  vacant: number;
-  booked: number;
-  occupied: number;
-  checkout: number;
+interface RoomStatsItem {
+  Status: string;
+  Count: number;
 }
 
 interface FinanceSummary {
@@ -27,10 +21,24 @@ interface FinanceSummary {
 }
 
 interface DashboardData {
-  stats: DashboardStats;
-  room_status: RoomStatusBreakdown;
+  stats: DashboardStats[];
+  room_stats: RoomStatsItem[];
   finance: FinanceSummary;
-  sos_active: boolean;
+  sos_active: number;
+}
+
+function parseRoomStats(roomStats: RoomStatsItem[]): { vacant: number; booked: number; occupied: number; checkout: number } {
+  const result = { vacant: 0, booked: 0, occupied: 0, checkout: 0 };
+  for (const item of roomStats) {
+    const key = item.Status as keyof typeof result;
+    if (key in result) result[key] = item.Count;
+  }
+  return result;
+}
+
+function getStat(stats: DashboardStats[], table: string): number {
+  const found = stats.find(s => s.table === table);
+  return found ? found.count : 0;
 }
 
 // ── Stat card component ────────────────────────────────────────────────────
@@ -136,11 +144,16 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  const stats = data.stats;
-  const roomStatus = data.room_status;
+  const roomStatus = parseRoomStats(data.room_stats);
   const finance = data.finance;
   const totalRooms =
     roomStatus.vacant + roomStatus.booked + roomStatus.occupied + roomStatus.checkout;
+
+  const roomsCount = getStat(data.stats, 'rooms');
+  const guestsCount = getStat(data.stats, 'guests');
+  const usersCount = getStat(data.stats, 'users');
+  const tasksCount = getStat(data.stats, 'maid_tasks');
+  const transactionsCount = getStat(data.stats, 'transactions');
 
   return (
     <div className="space-y-6">
@@ -165,36 +178,12 @@ export default function DashboardPage() {
           {RL('dashboard')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard
-            label={RL('room') + 's'}
-            value={stats.rooms_count}
-            accent="bg-blue-500"
-          />
-          <StatCard
-            label={RL('guests')}
-            value={stats.guests_count}
-            accent="bg-green-500"
-          />
-          <StatCard
-            label="Staff"
-            value={stats.users_count}
-            accent="bg-purple-500"
-          />
-          <StatCard
-            label={RL('tasks')}
-            value={stats.tasks_count}
-            accent="bg-amber-500"
-          />
-          <StatCard
-            label="Transactions"
-            value={stats.transactions_count}
-            accent="bg-teal-500"
-          />
-          <StatCard
-            label="SOS Active"
-            value={stats.sos_active_count}
-            accent={stats.sos_active_count > 0 ? 'bg-red-500' : 'bg-gray-400'}
-          />
+          <StatCard label={RL('room') + 's'} value={roomsCount} accent="bg-blue-500" />
+          <StatCard label={RL('guests')} value={guestsCount} accent="bg-green-500" />
+          <StatCard label="Staff" value={usersCount} accent="bg-purple-500" />
+          <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
+          <StatCard label="Transactions" value={transactionsCount} accent="bg-teal-500" />
+          <StatCard label="SOS Active" value={data.sos_active} accent={data.sos_active > 0 ? 'bg-red-500' : 'bg-gray-400'} />
         </div>
       </section>
 

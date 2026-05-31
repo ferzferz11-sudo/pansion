@@ -122,6 +122,21 @@ func main() {
 		})
 	})
 
+	// Room status update (inline JWT auth).
+	r.Put("/api/v1/rooms/{id}/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "" { writeJSON(w, 401, errResp("Unauthorized")); return }
+		roomID := chi.URLParam(r, "id")
+		var b struct {
+			Status string `json:"status"`
+		}
+		json.NewDecoder(r.Body).Decode(&b)
+		validStatuses := map[string]bool{"vacant": true, "booked": true, "occupied": true, "checking_out_today": true}
+		if !validStatuses[b.Status] { writeJSON(w, 400, errResp("Invalid status")); return }
+		_, err := pool.Exec(r.Context(), "UPDATE rooms SET status=$1, updated_at=NOW() WHERE id=$2", b.Status, roomID)
+		if err != nil { writeJSON(w, 500, errResp("Update failed")); return }
+		writeJSON(w, 200, okResp("ok"))
+	})
+
 	seedAdmin(ctx, pool, logger, sR)
 
 	srv := &http.Server{Addr: cfg.ServerPort, Handler: r,
@@ -270,14 +285,12 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 
 		// Medical: prescriptions list
 		rr.Get("/api/v1/medical/prescriptions", func(w http.ResponseWriter, r *http.Request) {
-			pid := ctxStr(r, "pid")
 			rows, err := pool.Query(r.Context(), `
 				SELECT mp.id, g.first_name || ' ' || g.last_name AS guest_name,
 				       mp.medication_name, mp.dosage, mp.frequency, mp.start_date, mp.end_date
 				FROM medical_prescriptions mp
 				JOIN guests g ON g.id = mp.guest_id
-				WHERE g.pension_id = $1
-				ORDER BY g.last_name, mp.medication_name`, pid)
+				ORDER BY g.last_name, mp.medication_name`)
 			if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
 			defer rows.Close()
 			type pres struct {
@@ -300,7 +313,6 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 
 		// Medical: today's medication logs
 		rr.Get("/api/v1/medical/logs", func(w http.ResponseWriter, r *http.Request) {
-			pid := ctxStr(r, "pid")
 			rows, err := pool.Query(r.Context(), `
 				SELECT ml.id, g.first_name || ' ' || g.last_name AS guest_name,
 				       mp.medication_name, ml.scheduled_time, ml.status,
@@ -309,8 +321,8 @@ func mountAdminRoutes(r chi.Router, jwtSvc *service.JWTService,
 				JOIN medical_prescriptions mp ON mp.id = ml.prescription_id
 				JOIN guests g ON g.id = mp.guest_id
 				LEFT JOIN users u ON u.id = ml.nurse_id
-				WHERE g.pension_id = $1 AND ml.scheduled_time::date = CURRENT_DATE
-				ORDER BY ml.scheduled_time`, pid)
+				WHERE ml.scheduled_time::date = CURRENT_DATE
+				ORDER BY ml.scheduled_time`)
 			if err != nil { writeJSON(w, 500, errResp("Ошибка")); return }
 			defer rows.Close()
 			type log struct {
