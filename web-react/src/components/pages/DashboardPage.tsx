@@ -47,11 +47,15 @@ interface StatCardProps {
   label: string;
   value: number;
   accent?: string;
+  onClick?: () => void;
 }
 
-function StatCard({ label, value, accent = 'bg-blue-500' }: StatCardProps) {
+function StatCard({ label, value, accent = 'bg-blue-500', onClick }: StatCardProps) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4">
+    <div
+      className={`bg-white rounded-xl shadow-sm border border-gray-100 p-5 flex items-center gap-4 ${onClick ? 'cursor-pointer hover:shadow-md transition' : ''}`}
+      onClick={onClick}
+    >
       <div className={`${accent} w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0`}>
         {value}
       </div>
@@ -90,7 +94,7 @@ function RoomStatusSegment({ label, count, total, color }: RoomStatusSegmentProp
 
 // ── Main page ──────────────────────────────────────────────────────────────
 
-export default function DashboardPage() {
+export default function DashboardPage({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   const { RL } = useLang();
   const [data, setData] = useState<DashboardData | null>(null);
   const [categories, setCategories] = useState<{category: string, total: number}[]>([]);
@@ -189,11 +193,11 @@ export default function DashboardPage() {
           {RL('dashboard')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <StatCard label={RL('rooms')} value={roomsCount} accent="bg-blue-500" />
-          <StatCard label={RL('guestsCount')} value={guestsCount} accent="bg-green-500" />
-          <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" />
-          <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
-          <StatCard label={RL('transactions')} value={transactionsCount} accent="bg-teal-500" />
+          <StatCard label={RL('rooms')} value={roomsCount} accent="bg-blue-500" onClick={() => onNavigate?.('chessboard')} />
+          <StatCard label={RL('guestsCount')} value={guestsCount} accent="bg-green-500" onClick={() => onNavigate?.('guests')} />
+          <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" onClick={() => onNavigate?.('users')} />
+          <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" onClick={() => onNavigate?.('tasks')} />
+          <StatCard label={RL('transactions')} value={transactionsCount} accent="bg-teal-500" onClick={() => onNavigate?.('finance')} />
           {data.sos_active > 0 && (
             <StatCard label={"SOS " + RL('active')} value={data.sos_active} accent="bg-red-500" />
           )}

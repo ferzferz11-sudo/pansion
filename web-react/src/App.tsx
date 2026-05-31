@@ -104,7 +104,7 @@ function MainApp() {
 
   const renderPage = () => {
     switch (activeTab) {
-      case 'dashboard': return <DashboardPage />;
+      case 'dashboard': return <DashboardPage onNavigate={setActiveTab} />;
       case 'chessboard': return <ChessboardPage />;
       case 'tasks': return <TasksPage />;
       case 'guests': return <GuestsPage />;
