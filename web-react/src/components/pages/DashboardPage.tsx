@@ -171,7 +171,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* SOS Active Warning Banner */}
-      {data.sos_active && (
+      {data.sos_active > 0 && (
         <div className="bg-red-50 border-l-4 border-red-500 rounded-r-lg p-4 flex items-center gap-3 animate-pulse">
           <div className="bg-red-500 text-white rounded-full w-10 h-10 flex items-center justify-center shrink-0">
             <span className="text-xl font-bold">!</span>
@@ -194,7 +194,9 @@ export default function DashboardPage() {
           <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" />
           <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
           <StatCard label={RL('transactions')} value={transactionsCount} accent="bg-teal-500" />
-          <StatCard label={"SOS " + RL('active')} value={data.sos_active} accent={data.sos_active > 0 ? 'bg-red-500' : 'bg-gray-400'} />
+          {data.sos_active > 0 && (
+            <StatCard label={"SOS " + RL('active')} value={data.sos_active} accent="bg-red-500" />
+          )}
         </div>
       </section>
 
