@@ -45,7 +45,7 @@ export default function SosPage() {
             {RL('success')}
           </h1>
           <p className="text-lg text-gray-600">
-            SOS signal sent. Help is on the way.
+            {RL('sosSuccess')}
           </p>
         </div>
       </div>
@@ -56,15 +56,13 @@ export default function SosPage() {
     <div className="page sos-page flex flex-col items-center justify-center min-h-[60vh]">
       <h1 className="text-3xl font-bold text-red-600 mb-2">{RL('urgent')}</h1>
       <p className="text-gray-500 mb-10 text-center max-w-sm">
-        Press the button below to send an emergency SOS signal to all staff members.
+        {RL('sosDesc')}
       </p>
 
       <div className="relative flex items-center justify-center mb-10">
-        {/* Pulse rings */}
         <span className="absolute w-48 h-48 rounded-full bg-red-400 opacity-20 animate-ping" />
         <span className="absolute w-40 h-40 rounded-full bg-red-400 opacity-30 animate-pulse" />
 
-        {/* SOS Button */}
         <button
           onClick={handleSos}
           disabled={sending}
@@ -73,7 +71,7 @@ export default function SosPage() {
                      transition-colors duration-150 focus:outline-none focus:ring-4
                      focus:ring-red-300 disabled:opacity-70 animate-pulse"
         >
-          {sending ? RL('loading') : 'SOS'}
+          {sending ? RL('loading') : RL('sos')}
         </button>
       </div>
 

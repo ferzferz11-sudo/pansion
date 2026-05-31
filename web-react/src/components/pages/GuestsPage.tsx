@@ -17,23 +17,16 @@ type GuestStatus = Guest['status'];
 
 // ── Status badge component ─────────────────────────────────────────────────
 
-const STATUS_CONFIG: Record<
-  GuestStatus,
-  { bg: string; label: string }
-> = {
-  queue: { bg: 'bg-amber-100 text-amber-800', label: 'queue' },
-  active: { bg: 'bg-green-100 text-green-800', label: 'active' },
-  archived: { bg: 'bg-gray-100 text-gray-600', label: 'archived' },
-};
-
-function StatusBadge({ status }: { status: GuestStatus }) {
-  const { bg } = STATUS_CONFIG[status];
-  const label = STATUS_CONFIG[status].label;
+function StatusBadge({ status, RL }: { status: GuestStatus; RL: (key: string) => string }) {
+  const config: Record<GuestStatus, { bg: string; labelKey: string }> = {
+    queue: { bg: 'bg-amber-100 text-amber-800', labelKey: 'queue' },
+    active: { bg: 'bg-green-100 text-green-800', labelKey: 'active' },
+    archived: { bg: 'bg-gray-100 text-gray-600', labelKey: 'archived' },
+  };
+  const { bg, labelKey } = config[status];
   return (
-    <span
-      className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${bg}`}
-    >
-      {label}
+    <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize ${bg}`}>
+      {RL(labelKey)}
     </span>
   );
 }
@@ -122,7 +115,7 @@ export default function GuestsPage() {
                   {RL('name')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  Diet Type
+                  {RL('dietType')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                   {RL('room')}
@@ -145,7 +138,7 @@ export default function GuestsPage() {
                     {guest.room_number}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={guest.status} />
+                    <StatusBadge status={guest.status} RL={RL} />
                   </td>
                 </tr>
               ))}

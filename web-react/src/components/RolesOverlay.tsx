@@ -108,7 +108,7 @@ export default function RolesOverlay({ open, onClose }: RolesOverlayProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-lg font-semibold text-gray-800">
-            {RL('settings')} — Roles
+            {RL('settings')} — {RL('roles')}
           </h2>
           <button
             onClick={onClose}
@@ -136,7 +136,7 @@ export default function RolesOverlay({ open, onClose }: RolesOverlayProps) {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') createRole();
               }}
-              placeholder="New role name…"
+              placeholder={RL('newRoleName') + '…'}
               className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             <button

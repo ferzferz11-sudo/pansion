@@ -112,7 +112,7 @@ export default function MedicalPage() {
         <section className="bg-white rounded-lg shadow">
           <div className="px-4 py-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold">
-              {RL('medication')} — Prescriptions
+              {RL('prescriptions')}
             </h2>
           </div>
 
@@ -152,7 +152,7 @@ export default function MedicalPage() {
         <section className="bg-white rounded-lg shadow">
           <div className="px-4 py-3 border-b border-gray-200">
             <h2 className="text-lg font-semibold">
-              {RL('medication')} — Today&apos;s Log
+              {RL('todayLog')}
             </h2>
           </div>
 

@@ -39,10 +39,10 @@ export default function FinancePage() {
     setError(null);
     try {
       const [s, tx] = await Promise.all([
-        api.get<FinanceSummary>('/finance/summary'),
+        api.get<any>('/finance/summary'),
         api.get<Transaction[]>('/finance'),
       ]);
-      setSummary(s);
+      setSummary(s.finance);
       setTransactions(tx);
     } catch (err) {
       setError(err instanceof Error ? err.message : RL('error'));
@@ -63,29 +63,73 @@ export default function FinancePage() {
       <h2 className="text-lg font-semibold">{RL('finance')}</h2>
 
       {summary && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="rounded-xl border border-green-200 bg-green-50 p-5 flex items-center gap-4">
-            <div className="bg-green-500 text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0">↑</div>
-            <div className="min-w-0">
-              <p className="text-sm text-gray-500">{RL('income')}</p>
-              <p className="text-2xl font-bold text-green-700">+{summary.income.toLocaleString()}</p>
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="rounded-xl border border-green-200 bg-green-50 p-5 flex items-center gap-4">
+              <div className="bg-green-500 text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0">↑</div>
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500">{RL('income')}</p>
+                <p className="text-2xl font-bold text-green-700">+{summary.income.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-red-50 p-5 flex items-center gap-4">
+              <div className="bg-red-500 text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0">↓</div>
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500">{RL('expense')}</p>
+                <p className="text-2xl font-bold text-red-700">-{summary.expense.toLocaleString()}</p>
+              </div>
+            </div>
+            <div className={`rounded-xl border p-5 flex items-center gap-4 ${summary.balance >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <div className={`text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0 ${summary.balance >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>═</div>
+              <div className="min-w-0">
+                <p className="text-sm text-gray-500">{RL('balance')}</p>
+                <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>{summary.balance >= 0 ? '+' : ''}{summary.balance.toLocaleString()}</p>
+              </div>
             </div>
           </div>
-          <div className="rounded-xl border border-red-200 bg-red-50 p-5 flex items-center gap-4">
-            <div className="bg-red-500 text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0">↓</div>
-            <div className="min-w-0">
-              <p className="text-sm text-gray-500">{RL('expense')}</p>
-              <p className="text-2xl font-bold text-red-700">-{summary.expense.toLocaleString()}</p>
+
+          {/* Visual bar chart */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <h3 className="text-base font-semibold text-gray-800 mb-4">{RL('financeSummary')}</h3>
+            <div className="space-y-3">
+              {(() => {
+                const max = Math.max(summary.income, summary.expense, 1);
+                const incomePct = (summary.income / max) * 100;
+                const expensePct = (summary.expense / max) * 100;
+                return (
+                  <>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600">{RL('income')}</span>
+                        <span className="font-medium text-green-700">+{summary.income.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3">
+                        <div className="bg-green-500 h-3 rounded-full transition-all" style={{ width: `${incomePct}%` }} />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-600">{RL('expense')}</span>
+                        <span className="font-medium text-red-700">-{summary.expense.toLocaleString()}</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-3">
+                        <div className="bg-red-500 h-3 rounded-full transition-all" style={{ width: `${expensePct}%` }} />
+                      </div>
+                    </div>
+                    <div className="pt-2 border-t border-gray-100">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">{RL('balance')}</span>
+                        <span className={`font-bold ${summary.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                          {summary.balance >= 0 ? '+' : ''}{summary.balance.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
-          <div className={`rounded-xl border p-5 flex items-center gap-4 ${summary.balance >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-            <div className={`text-white font-bold text-2xl w-14 h-14 rounded-lg flex items-center justify-center shrink-0 ${summary.balance >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>═</div>
-            <div className="min-w-0">
-              <p className="text-sm text-gray-500">{RL('balance')}</p>
-              <p className={`text-2xl font-bold ${summary.balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>{summary.balance >= 0 ? '+' : ''}{summary.balance.toLocaleString()}</p>
-            </div>
-          </div>
-        </div>
+        </>
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

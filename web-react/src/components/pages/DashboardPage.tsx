@@ -164,10 +164,8 @@ export default function DashboardPage() {
             <span className="text-xl font-bold">!</span>
           </div>
           <div>
-            <p className="font-semibold text-red-800">SOS Active Alert</p>
-            <p className="text-sm text-red-600">
-              There are active SOS alerts that require immediate attention.
-            </p>
+            <p className="font-semibold text-red-800">{RL('sos')} {RL('alert')}</p>
+            <p className="text-sm text-red-600">{RL('sosDesc')}</p>
           </div>
         </div>
       )}
@@ -180,10 +178,10 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
           <StatCard label={RL('room') + 's'} value={roomsCount} accent="bg-blue-500" />
           <StatCard label={RL('guests')} value={guestsCount} accent="bg-green-500" />
-          <StatCard label="Staff" value={usersCount} accent="bg-purple-500" />
+          <StatCard label={RL('users')} value={usersCount} accent="bg-purple-500" />
           <StatCard label={RL('tasks')} value={tasksCount} accent="bg-amber-500" />
-          <StatCard label="Transactions" value={transactionsCount} accent="bg-teal-500" />
-          <StatCard label="SOS Active" value={data.sos_active} accent={data.sos_active > 0 ? 'bg-red-500' : 'bg-gray-400'} />
+          <StatCard label={RL('transactions')} value={transactionsCount} accent="bg-teal-500" />
+          <StatCard label={"SOS " + RL('active')} value={data.sos_active} accent={data.sos_active > 0 ? 'bg-red-500' : 'bg-gray-400'} />
         </div>
       </section>
 
@@ -192,7 +190,7 @@ export default function DashboardPage() {
         {/* Room Status Breakdown */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h3 className="text-base font-semibold text-gray-800 mb-4">
-            Room Status Breakdown
+            {RL('roomStatus')}
           </h3>
           <div className="space-y-4">
             <RoomStatusSegment
@@ -202,7 +200,7 @@ export default function DashboardPage() {
               color="bg-green-500"
             />
             <RoomStatusSegment
-              label="Booked"
+              label={RL('booked')}
               count={roomStatus.booked}
               total={totalRooms}
               color="bg-blue-500"
@@ -214,21 +212,21 @@ export default function DashboardPage() {
               color="bg-amber-500"
             />
             <RoomStatusSegment
-              label="Checkout"
+              label={RL('checkout')}
               count={roomStatus.checkout}
               total={totalRooms}
               color="bg-red-400"
             />
           </div>
           <div className="mt-4 pt-3 border-t border-gray-100 text-sm text-gray-500">
-            Total rooms: {totalRooms}
+            {RL('totalRooms')}: {totalRooms}
           </div>
         </section>
 
         {/* Finance Summary */}
         <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
           <h3 className="text-base font-semibold text-gray-800 mb-4">
-            Finance Summary
+            {RL('financeSummary')}
           </h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -259,7 +257,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-2 border-gray-200">
               <span className="text-sm font-semibold text-gray-700">
-                Balance
+                {RL('balance')}
               </span>
               <span
                 className={`text-xl font-bold ${

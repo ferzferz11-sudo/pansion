@@ -1,354 +1,176 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
-// ── Language type ──────────────────────────────────────────────────────────
 type Lang = 'ru' | 'en';
 
-// ── Translation dictionaries ───────────────────────────────────────────────
-
 interface CommonStrings {
-  login: string;
-  logout: string;
-  username: string;
-  password: string;
-  submit: string;
-  cancel: string;
-  save: string;
-  delete: string;
-  edit: string;
-  create: string;
-  back: string;
-  search: string;
-  loading: string;
-  error: string;
-  success: string;
-  confirm: string;
-  yes: string;
-  no: string;
-  name: string;
-  status: string;
-  actions: string;
-  date: string;
-  amount: string;
-  category: string;
-  description: string;
-  room: string;
-  floor: string;
-  type: string;
-  capacity: string;
-  notes: string;
-  guests: string;
-  checkIn: string;
-  checkOut: string;
-  passport: string;
-  phone: string;
-  email: string;
-  active: string;
-  inactive: string;
-  free: string;
-  occupied: string;
-  cleaning: string;
-  repair: string;
-  pending: string;
-  inProgress: string;
-  done: string;
-  cancelled: string;
-  low: string;
-  medium: string;
-  high: string;
-  urgent: string;
-  income: string;
-  expense: string;
-  medication: string;
-  dosage: string;
-  frequency: string;
-  startDate: string;
-  endDate: string;
-  loginFailed: string;
-  sessionExpired: string;
-  welcomeBack: string;
-  welcome: string;
-  profile: string;
-  settings: string;
-  dashboard: string;
-  noData: string;
-  filter: string;
-  all: string;
-  assignedTo: string;
-  dueDate: string;
-  priority: string;
-  title: string;
-  resolved: string;
-  unresolved: string;
+  // Auth
+  login: string; logout: string; username: string; password: string;
+  submit: string; loginFailed: string; sessionExpired: string;
+  // Actions
+  cancel: string; save: string; delete: string; edit: string; create: string;
+  back: string; search: string; confirm: string; yes: string; no: string;
+  // Status
+  loading: string; error: string; success: string; active: string; inactive: string;
+  // Data
+  name: string; status: string; actions: string; date: string; amount: string;
+  category: string; description: string; type: string;
+  // Rooms
+  rooms: string; room: string; floor: string;
+  vacant: string; booked: string; occupied: string; checkout: string; free: string;
+  // Guests
+  guests: string; queue: string; archived: string;
+  checkIn: string; checkOut: string; passport: string;
+  // Finance
+  // Room status
+  roomStatus: string; totalRooms: string;
+  // Finance
+  financeSummary: string;
+  // Medical
+  medical: string; medication: string; dosage: string; frequency: string;
+  startDate: string; endDate: string; assignedTo: string; prescriptions: string; todayLog: string;
+  // Tasks
+  tasks: string; pending: string; inProgress: string; done: string; cancelled: string;
+  priority: string; low: string; medium: string; high: string; urgent: string;
+  // Users
+  users: string; user: string;
+  firstName: string; lastName: string; phone: string; email: string;
+  role: string; roles: string;
+  // Settings
+  settings: string; tabSettings: string; tabSettingsDesc: string;
+  // Dashboard
+  dashboard: string; sos: string; sosDesc: string; sosSuccess: string; alert: string;
+  // Misc
+  noData: string; filter: string; all: string; capacity: string; notes: string;
+  deleteConfirm: string; add: string; dietType: string; newRoleName: string; language: string;
+  welcome: string; welcomeBack: string; profile: string;
+  // Rooms
+  rooms: string;
 }
 
 interface TabStrings {
-  dashboard: string;
-  chessboard: string;
-  tasks: string;
-  guests: string;
-  finance: string;
-  medical: string;
-  sos: string;
-  users: string;
+  dashboard: string; chessboard: string; tasks: string; guests: string;
+  finance: string; medical: string; sos: string; users: string;
 }
 
 const COMMON_RU: CommonStrings = {
-  login: 'Войти',
-  logout: 'Выйти',
-  username: 'Логин',
-  password: 'Пароль',
-  submit: 'Отправить',
-  cancel: 'Отмена',
-  save: 'Сохранить',
-  delete: 'Удалить',
-  edit: 'Редактировать',
-  create: 'Создать',
-  back: 'Назад',
-  search: 'Поиск',
-  loading: 'Загрузка…',
-  error: 'Ошибка',
-  success: 'Успешно',
-  confirm: 'Подтвердить',
-  yes: 'Да',
-  no: 'Нет',
-  name: 'Имя',
-  status: 'Статус',
-  actions: 'Действия',
-  date: 'Дата',
-  amount: 'Сумма',
-  category: 'Категория',
-  description: 'Описание',
-  room: 'Номер',
-  floor: 'Этаж',
-  type: 'Тип',
-  capacity: 'Вместимость',
-  notes: 'Заметки',
-  guests: 'Гости',
-  checkIn: 'Заселение',
-  checkOut: 'Выселение',
-  passport: 'Паспорт',
-  phone: 'Телефон',
-  email: 'Email',
-  active: 'Активен',
-  inactive: 'Неактивен',
-  free: 'Свободен',
-  occupied: 'Занят',
-  cleaning: 'Уборка',
-  repair: 'Ремонт',
-  pending: 'Ожидает',
-  inProgress: 'В процессе',
-  done: 'Готово',
-  cancelled: 'Отменено',
-  low: 'Низкий',
-  medium: 'Средний',
-  high: 'Высокий',
-  urgent: 'Срочный',
-  income: 'Доход',
-  expense: 'Расход',
-  medication: 'Препарат',
-  dosage: 'Дозировка',
-  frequency: 'Частота',
-  startDate: 'Дата начала',
-  endDate: 'Дата окончания',
-  loginFailed: 'Неверный логин или пароль',
-  sessionExpired: 'Сессия истекла, войдите снова',
-  welcomeBack: 'С возвращением',
-  welcome: 'Добро пожаловать',
-  profile: 'Профиль',
-  settings: 'Настройки',
-  dashboard: 'Панель управления',
-  noData: 'Нет данных',
-  filter: 'Фильтр',
-  all: 'Все',
-  assignedTo: 'Исполнитель',
-  dueDate: 'Срок',
-  priority: 'Приоритет',
-  title: 'Название',
-  resolved: 'Решено',
-  unresolved: 'Не решено',
+  login: 'Войти', logout: 'Выйти', username: 'Логин', password: 'Пароль',
+  submit: 'Отправить', loginFailed: 'Неверный логин или пароль', sessionExpired: 'Сессия истекла',
+  cancel: 'Отмена', save: 'Сохранить', delete: 'Удалить', edit: 'Редактировать', create: 'Создать',
+  back: 'Назад', search: 'Поиск', confirm: 'Подтвердить', yes: 'Да', no: 'Нет',
+  loading: 'Загрузка…', error: 'Ошибка', success: 'Успешно', active: 'Активен', inactive: 'Неактивен',
+  name: 'Имя', status: 'Статус', actions: 'Действия', date: 'Дата', amount: 'Сумма',
+  category: 'Категория', description: 'Описание', type: 'Тип',
+  rooms: 'Номера', room: 'Номер', floor: 'Этаж',
+  vacant: 'Свободен', booked: 'Бронь', occupied: 'Занят', checkout: 'Выезд', free: 'Свободен',
+  guests: 'Постояльцы', queue: 'Ожидает', archived: 'Архив',
+  checkIn: 'Заселение', checkOut: 'Выселение', passport: 'Паспорт',
+  finance: 'Финансы', transactions: 'Транзакции', income: 'Доход', expense: 'Расход', balance: 'Баланс',
+  roomStatus: 'Статус номеров', totalRooms: 'Всего номеров', financeSummary: 'Финансовый итог',
+  medical: 'Медицина', medication: 'Препарат', dosage: 'Дозировка', frequency: 'Частота',
+  startDate: 'Дата начала', endDate: 'Дата окончания', assignedTo: 'Назначено',
+  prescriptions: 'Назначения', todayLog: 'Журнал на сегодня',
+  tasks: 'Задачи', pending: 'Ожидает', inProgress: 'В процессе', done: 'Готово', cancelled: 'Отменено',
+  priority: 'Приоритет', low: 'Низкий', medium: 'Средний', high: 'Высокий', urgent: 'Срочный',
+  users: 'Сотрудники', user: 'Сотрудник',
+  firstName: 'Имя', lastName: 'Фамилия', phone: 'Телефон', email: 'Email',
+  role: 'Роль', roles: 'Роли',
+  settings: 'Настройки', tabSettings: 'Настройки вкладок', tabSettingsDesc: 'Управляйте тем, какие разделы видны каждой роли сотрудников.',
+  dashboard: 'Панель управления', sos: 'SOS', alert: 'Тревога',
+  noData: 'Нет данных', filter: 'Фильтр', all: 'Все', capacity: 'Вместимость', notes: 'Заметки',
+  deleteConfirm: 'Удалить запись?', add: 'Добавить', dietType: 'Диета', newRoleName: 'Название новой роли', language: 'Язык',
+  welcome: 'Добро пожаловать', welcomeBack: 'С возвращением', profile: 'Профиль',
 };
 
 const COMMON_EN: CommonStrings = {
-  login: 'Log in',
-  logout: 'Log out',
-  username: 'Username',
-  password: 'Password',
-  submit: 'Submit',
-  cancel: 'Cancel',
-  save: 'Save',
-  delete: 'Delete',
-  edit: 'Edit',
-  create: 'Create',
-  back: 'Back',
-  search: 'Search',
-  loading: 'Loading…',
-  error: 'Error',
-  success: 'Success',
-  confirm: 'Confirm',
-  yes: 'Yes',
-  no: 'No',
-  name: 'Name',
-  status: 'Status',
-  actions: 'Actions',
-  date: 'Date',
-  amount: 'Amount',
-  category: 'Category',
-  description: 'Description',
-  room: 'Room',
-  floor: 'Floor',
-  type: 'Type',
-  capacity: 'Capacity',
-  notes: 'Notes',
-  guests: 'Guests',
-  checkIn: 'Check-in',
-  checkOut: 'Check-out',
-  passport: 'Passport',
-  phone: 'Phone',
-  email: 'Email',
-  active: 'Active',
-  inactive: 'Inactive',
-  free: 'Free',
-  occupied: 'Occupied',
-  cleaning: 'Cleaning',
-  repair: 'Repair',
-  pending: 'Pending',
-  inProgress: 'In Progress',
-  done: 'Done',
-  cancelled: 'Cancelled',
-  low: 'Low',
-  medium: 'Medium',
-  high: 'High',
-  urgent: 'Urgent',
-  income: 'Income',
-  expense: 'Expense',
-  medication: 'Medication',
-  dosage: 'Dosage',
-  frequency: 'Frequency',
-  startDate: 'Start Date',
-  endDate: 'End Date',
-  loginFailed: 'Invalid username or password',
-  sessionExpired: 'Session expired, please log in again',
-  welcomeBack: 'Welcome back',
-  welcome: 'Welcome',
-  profile: 'Profile',
-  settings: 'Settings',
-  dashboard: 'Dashboard',
-  noData: 'No data',
-  filter: 'Filter',
-  all: 'All',
-  assignedTo: 'Assignee',
-  dueDate: 'Due Date',
-  priority: 'Priority',
-  title: 'Title',
-  resolved: 'Resolved',
-  unresolved: 'Unresolved',
+  login: 'Log in', logout: 'Log out', username: 'Username', password: 'Password',
+  submit: 'Submit', loginFailed: 'Invalid username or password', sessionExpired: 'Session expired',
+  cancel: 'Cancel', save: 'Save', delete: 'Delete', edit: 'Edit', create: 'Create',
+  back: 'Back', search: 'Search', confirm: 'Confirm', yes: 'Yes', no: 'No',
+  loading: 'Loading…', error: 'Error', success: 'Success', active: 'Active', inactive: 'Inactive',
+  name: 'Name', status: 'Status', actions: 'Actions', date: 'Date', amount: 'Amount',
+  category: 'Category', description: 'Description', type: 'Type',
+  rooms: 'Rooms', room: 'Room', floor: 'Floor',
+  vacant: 'Vacant', booked: 'Booked', occupied: 'Occupied', checkout: 'Checkout', free: 'Free',
+  guests: 'Guests', queue: 'Queue', archived: 'Archived',
+  checkIn: 'Check-in', checkOut: 'Check-out', passport: 'Passport',
+  finance: 'Finance', transactions: 'Transactions', income: 'Income', expense: 'Expense', balance: 'Balance',
+  roomStatus: 'Room Status', totalRooms: 'Total rooms', financeSummary: 'Finance Summary',
+  medical: 'Medical', medication: 'Medication', dosage: 'Dosage', frequency: 'Frequency',
+  startDate: 'Start Date', endDate: 'End Date', assignedTo: 'Assigned To',
+  prescriptions: 'Prescriptions', todayLog: "Today's Log",
+  tasks: 'Tasks', pending: 'Pending', inProgress: 'In Progress', done: 'Done', cancelled: 'Cancelled',
+  priority: 'Priority', low: 'Low', medium: 'Medium', high: 'High', urgent: 'Urgent',
+  users: 'Staff', user: 'User',
+  firstName: 'First Name', lastName: 'Last Name', phone: 'Phone', email: 'Email',
+  role: 'Role', roles: 'Roles',
+  settings: 'Settings', tabSettings: 'Tab Settings', tabSettingsDesc: 'Manage which sections are visible to each staff role.',
+  dashboard: 'Dashboard', sos: 'SOS', alert: 'Alert',
+  noData: 'No data', filter: 'Filter', all: 'All', capacity: 'Capacity', notes: 'Notes',
+  deleteConfirm: 'Delete this record?', add: 'Add', dietType: 'Diet Type', newRoleName: 'New role name', language: 'Language',
+  welcome: 'Welcome', welcomeBack: 'Welcome back', profile: 'Profile',
 };
 
-export const TL_RU: TabStrings = {
-  dashboard: 'Панель управления',
-  chessboard: 'Номерной фонд',
-  tasks: 'Задачи',
-  guests: 'Постояльцы',
-  finance: 'Финансы',
-  medical: 'Медицина',
-  sos: 'SOS',
-  users: 'Сотрудники',
+const TL_RU: TabStrings = {
+  dashboard: 'Панель управления', chessboard: 'Номерной фонд', tasks: 'Задачи',
+  guests: 'Постояльцы', finance: 'Финансы', medical: 'Медицина', sos: 'SOS', users: 'Сотрудники',
 };
 
-export const TL_EN: TabStrings = {
-  dashboard: 'Dashboard',
-  chessboard: 'Rooms',
-  tasks: 'Tasks',
-  guests: 'Guests',
-  finance: 'Finance',
-  medical: 'Medical',
-  sos: 'SOS',
-  users: 'Staff',
+const TL_EN: TabStrings = {
+  dashboard: 'Dashboard', chessboard: 'Rooms', tasks: 'Tasks',
+  guests: 'Guests', finance: 'Finance', medical: 'Medical', sos: 'SOS', users: 'Staff',
 };
 
-export const ROLE_NAMES_RU: Record<string, string> = {
-  owner: 'Владелец',
-  manager: 'Управляющий',
-  administrator: 'Администратор',
-  doctor: 'Врач',
-  maid: 'Горничная',
+const ROLE_NAMES_RU: Record<string, string> = {
+  owner: 'Владелец', manager: 'Управляющий', administrator: 'Администратор',
+  doctor: 'Врач', maid: 'Горничная', receptionist: 'Регистратор',
 };
 
-export const ROLE_NAMES_EN: Record<string, string> = {
-  owner: 'Owner',
-  manager: 'Manager',
-  administrator: 'Administrator',
-  doctor: 'Doctor',
-  maid: 'Maid',
+const ROLE_NAMES_EN: Record<string, string> = {
+  owner: 'Owner', manager: 'Manager', administrator: 'Administrator',
+  doctor: 'Doctor', maid: 'Maid', receptionist: 'Receptionist',
 };
 
-// ── Context shape ──────────────────────────────────────────────────────────
 interface LangContextValue {
   lang: Lang;
-  setLang: (l: Lang) => void;
+  setLang: (lang: Lang) => void;
   toggleLang: () => void;
-  /** Translate a common UI key */
   RL: (key: keyof CommonStrings) => string;
-  /** Translate a navigation tab key */
   TL: (key: keyof TabStrings) => string;
-  /** Translate a role name */
   roleName: (role: string) => string;
 }
 
 const LangContext = createContext<LangContextValue | null>(null);
 
-// ── Provider ───────────────────────────────────────────────────────────────
 export function LangProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
     return (localStorage.getItem('pansion_lang') as Lang) || 'ru';
   });
 
-  const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    localStorage.setItem('pansion_lang', l);
+  const setLang = useCallback((newLang: Lang) => {
+    localStorage.setItem('pansion_lang', newLang);
+    setLangState(newLang);
   }, []);
 
   const toggleLang = useCallback(() => {
-    setLangState((prev) => {
-      const next = prev === 'ru' ? 'en' : 'ru';
-      localStorage.setItem('pansion_lang', next);
-      return next;
-    });
-  }, []);
+    setLang(lang === 'ru' ? 'en' : 'ru');
+  }, [lang, setLang]);
 
-  const RL = useCallback(
-    (key: keyof CommonStrings): string => {
-      return lang === 'ru' ? COMMON_RU[key] : COMMON_EN[key];
-    },
-    [lang],
-  );
+  const RL = useCallback((key: keyof CommonStrings): string => {
+    return lang === 'ru' ? COMMON_RU[key] : COMMON_EN[key];
+  }, [lang]);
 
-  const TL = useCallback(
-    (key: keyof TabStrings): string => {
-      return lang === 'ru' ? TL_RU[key] : TL_EN[key];
-    },
-    [lang],
-  );
+  const TL = useCallback((key: keyof TabStrings): string => {
+    return lang === 'ru' ? TL_RU[key] : TL_EN[key];
+  }, [lang]);
 
-  const roleName = useCallback(
-    (role: string): string => {
-      const dict = lang === 'ru' ? ROLE_NAMES_RU : ROLE_NAMES_EN;
-      return dict[role] ?? role;
-    },
-    [lang],
-  );
+  const roleName = useCallback((role: string): string => {
+    const dict = lang === 'ru' ? ROLE_NAMES_RU : ROLE_NAMES_EN;
+    return dict[role] || role;
+  }, [lang]);
 
-  const value = useMemo<LangContextValue>(
-    () => ({ lang, setLang, toggleLang, RL, TL, roleName }),
-    [lang, setLang, toggleLang, RL, TL, roleName],
-  );
+  const value = useMemo(() => ({
+    lang, setLang, toggleLang, RL, TL, roleName,
+  }), [lang, setLang, toggleLang, RL, TL, roleName]);
 
   return (
     <LangContext.Provider value={value}>
@@ -357,13 +179,8 @@ export function LangProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// ── Hook ───────────────────────────────────────────────────────────────────
 export function useLang(): LangContextValue {
   const ctx = useContext(LangContext);
-  if (!ctx) {
-    throw new Error('useLang must be used within a <LangProvider>');
-  }
+  if (!ctx) throw new Error('useLang must be used within LangProvider');
   return ctx;
 }
-
-export default LangContext;
